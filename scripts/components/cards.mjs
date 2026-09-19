@@ -31,3 +31,10 @@ export function chartHandledCard({ cx, cy, w, h, tilt, theme, icon, label, sub }
   out.push("  </g>");
   return out;
 }
+
+// The chart style's "and more" card: a plain dashed rect (no tilt, no grommet, no themed
+// glyph) with a muted italic label, drawn one gap past the last handled card when a spec's
+// `more` flag asks for it.
+export function chartMoreCard({ x, cy, w, h, theme }) {
+  return `<g><rect class="c-${theme}" x="${x}" y="${cy - h / 2}" width="${w}" height="${h}" rx="6" stroke-dasharray="4 4"/><text class="serif muted" x="${x + 36}" y="${cy + 6}" font-size="17" font-style="italic">and more</text></g>`;
+}
