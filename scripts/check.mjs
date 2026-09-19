@@ -73,6 +73,7 @@ function checkSpecShape(spec) {
   const F = mkF("spec/shape");
   const findings = [];
   const fail = (message, repair) => findings.push(F("fail", message, repair));
+  const warn = (message, repair) => findings.push(F("warn", message, repair));
 
   if (!isPlainObject(spec)) {
     fail("The spec is not a JSON object.", "Write the spec as a single JSON object.");
@@ -92,6 +93,17 @@ function checkSpecShape(spec) {
 
   if (spec.style !== undefined && !STYLE_VALUES.includes(spec.style)) {
     fail(`"style" is "${spec.style}", not one of ${STYLE_VALUES.join(", ")}.`, `Set "style" to one of ${STYLE_VALUES.join(", ")}, or remove it to default to "flat".`);
+  }
+
+  // The owner's rule: a style is chosen for every hero. "flat" exists only so
+  // readmerlin's two goldens do not move, so an absent "style" (which
+  // defaults to flat) is worth flagging, but only as a warn — it does not
+  // block the hero from being valid.
+  if (spec.style === undefined) {
+    warn(
+      "No style chosen; the renderer will draw flat, which exists only for readmerlin's goldens.",
+      'Set "style": "chart", or the style whose world fits this product.'
+    );
   }
 
   for (const key of ["headline", "subhead", "aside"]) {
