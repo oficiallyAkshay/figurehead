@@ -17,40 +17,22 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
-import { ICONS } from "./icons.mjs";
+import { esc } from "./components/esc.mjs";
+import { glyph, themedGlyph, rawGlyph } from "./components/glyphs.mjs";
+import { svgHead } from "./components/svg-shell.mjs";
+import { okBadge } from "./components/badges.mjs";
+import { flowCurve, ropeLink, grommet } from "./components/curves.mjs";
+import { stackedSheet } from "./components/sheets.mjs";
+import { flatCard, chartHandledCard } from "./components/cards.mjs";
+import { chartHub, windowHandoffHub } from "./components/hub-disc.mjs";
+import { chartHeadlineBlock, windowHeadlineBlock } from "./components/headline.mjs";
+import { panelWithChrome } from "./components/panel.mjs";
+import { listRow } from "./components/list-rows.mjs";
+import { calendarGrid } from "./components/calendar.mjs";
 
 const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 const SERIF = 'Georgia, "Iowan Old Style", Palatino, "Palatino Linotype", "Times New Roman", serif';
 const HAND = '"Bradley Hand", "Segoe Print", "Chalkboard SE", cursive';
-const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-function iconEntry(name) {
-  const icon = ICONS[name];
-  if (!icon) throw new Error(`Unknown icon "${name}". Known: ${Object.keys(ICONS).join(", ")}.`);
-  return icon;
-}
-
-// The flat style's icon: always the ".glyph" class, slate stroke, no fill.
-function glyph(name, x, y, size, extra = "") {
-  const [box, path] = iconEntry(name);
-  const scale = +(size / box).toFixed(3);
-  return `<g class="glyph" transform="translate(${x},${y})${scale === 1 ? "" : ` scale(${scale})`}"${extra}>${path}</g>`;
-}
-
-// The chart style's icon, coloured by whichever class the caller passes (a theme's ".i-navy" and friends, or
-// ".anchor" for the hub) instead of the flat style's fixed ".glyph".
-function themedGlyph(name, x, y, size, cls) {
-  const [box, path] = iconEntry(name);
-  const scale = +(size / box).toFixed(3);
-  return `<g class="${cls}" transform="translate(${x},${y})${scale === 1 ? "" : ` scale(${scale})`}">${path}</g>`;
-}
-
-// The chart style's source button icon: a literal cream stroke on a green button, not a theme colour.
-function rawGlyph(name, x, y, size, attrs) {
-  const [box, path] = iconEntry(name);
-  const scale = +(size / box).toFixed(3);
-  return `<g transform="translate(${x},${y})${scale === 1 ? "" : ` scale(${scale})`}" ${attrs}>${path}</g>`;
-}
 
 // ---------------------------------------------------------------------------
 // Spec validation. Unknown fields are an error naming the field; anything the
@@ -124,9 +106,18 @@ function assertFits(text, max, where) {
 // The page the reader wanted. "document" is a README-like page, "table" is a summary with a total.
 function page(kind, x, y, heading) {
   const out = [];
-  out.push(`<rect class="sheet back2" x="${x + 28}" y="${y + 28}" width="212" height="274" rx="10"/>`);
-  out.push(`<rect class="sheet back1" x="${x + 14}" y="${y + 14}" width="212" height="274" rx="10"/>`);
-  out.push(`<rect class="sheet front" x="${x}" y="${y}" width="212" height="274" rx="10"/>`);
+  out.push(
+    ...stackedSheet({
+      x,
+      y,
+      w: 212,
+      h: 274,
+      rx: 10,
+      back2: { dx: 28, dy: 28, cls: "sheet back2" },
+      back1: { dx: 14, dy: 14, cls: "sheet back1" },
+      frontClass: "sheet front",
+    })
+  );
   if (kind === "table") {
     out.push(`<text class="title" x="${x + 22}" y="${y + 42}" font-size="20">${esc(heading)}</text>`);
     [96, 72, 110, 84, 100].forEach((w, i) => {
@@ -141,47 +132,52 @@ function page(kind, x, y, heading) {
   out.push(`<rect class="bar" x="${x + 56}" y="${y + 56}" width="100" height="8" rx="4"/>`);
   for (const dx of [34, 84, 134]) out.push(`<rect class="pill" x="${x + dx}" y="${y + 78}" width="38" height="10" rx="5"/>`);
   out.push(`<rect class="card" x="${x + 22}" y="${y + 104}" width="168" height="62" rx="8"/>`);
-  out.push(`<path class="flow" d="M${x + 40},${y + 135} C ${x + 70},${y + 135} ${x + 90},${y + 118} ${x + 110},${y + 118}" marker-end="url(#arrow)"/>`);
-  out.push(`<path class="flow" d="M${x + 40},${y + 135} C ${x + 70},${y + 135} ${x + 90},${y + 152} ${x + 110},${y + 152}" marker-end="url(#arrow)"/>`);
+  out.push(flowCurve({ x1: x + 40, y1: y + 135, c1x: x + 70, c1y: y + 135, c2x: x + 90, c2y: y + 118, x2: x + 110, y2: y + 118, marker: true }));
+  out.push(flowCurve({ x1: x + 40, y1: y + 135, c1x: x + 70, c1y: y + 135, c2x: x + 90, c2y: y + 152, x2: x + 110, y2: y + 152, marker: true }));
   out.push(`<circle class="dot" cx="${x + 38}" cy="${y + 135}" r="4"/>`);
   [120, 96, 132, 84].forEach((w, i) => out.push(`<rect class="bar" x="${x + 22}" y="${y + 186 + i * 20}" width="${w}" height="8" rx="4"/>`));
-  out.push(`<g class="glyph ok" transform="translate(${x + 150},${y + 232}) scale(1.2)"><circle cx="10" cy="10" r="8"/><path d="M6.5,10 l2.5,2.5 4.5,-5"/></g>`);
+  out.push(okBadge(x + 150, y + 232, 1.2));
   return out;
 }
 
 function head(o, spec, height) {
-  o.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 ${height}" width="1200" height="${height}" role="img" aria-labelledby="hero-title">`);
-  o.push(`  <title id="hero-title">${esc(spec.title)}</title>`);
-  o.push("  <defs>");
-  o.push('    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d97706"/></marker>');
-  o.push('    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0.72" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>');
-  o.push("    <style>");
-  o.push("      .card { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }");
-  o.push("      .more { stroke-dasharray: 4 4; }");
-  o.push("      .glyph { fill: none; stroke: #475569; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }");
-  o.push("      .ok { stroke: #16a34a; }");
-  o.push(`      .title { font-family: ${FONT}; fill: #0f172a; font-weight: 600; }`);
-  o.push(`      .muted { font-family: ${FONT}; fill: #64748b; font-weight: 500; }`);
-  o.push(`      .wrong { font-family: ${FONT}; fill: #b91c1c; font-weight: 600; }`);
-  o.push("      .flow { fill: none; stroke: #d97706; stroke-width: 2; }");
-  o.push("      .dot { fill: #d97706; }");
-  o.push("      .bar { fill: #cbd5e1; }");
-  o.push("      .pill { fill: #334155; }");
-  o.push("      .code { fill: #1e293b; } .codeline { fill: #64748b; }");
-  o.push("      .stale { fill: none; stroke: #dc2626; stroke-width: 2; stroke-dasharray: 3 3; } .dead { fill: #93c5fd; }");
-  o.push("      .mark { fill: #dc2626; } .lead { stroke: #dc2626; stroke-width: 2; } .good { fill: #16a34a; } .goodlead { stroke: #16a34a; stroke-width: 2; }");
-  o.push("      .fold { stroke: #dc2626; stroke-width: 2; stroke-dasharray: 6 5; }");
-  o.push("      .rule { stroke: #94a3b8; stroke-width: 2; }");
-  o.push("      .sheet { stroke: #94a3b8; stroke-width: 2; }");
-  o.push("      .front { fill: #ffffff; stroke: #64748b; } .back1 { fill: #f4f7fa; } .back2 { fill: #eef2f7; }");
-  o.push("      @media (prefers-color-scheme: dark) {");
-  o.push("        .card { fill: #1e293b; stroke: #64748b; } .glyph { stroke: #cbd5e1; } .ok { stroke: #4ade80; }");
-  o.push("        .title { fill: #f1f5f9; } .muted { fill: #94a3b8; } .wrong { fill: #fca5a5; } .bar { fill: #475569; } .pill { fill: #cbd5e1; } .rule { stroke: #64748b; }");
-  o.push("        .code { fill: #020617; } .codeline { fill: #475569; } .dead { fill: #3b82f6; } .stale, .lead, .fold { stroke: #f87171; } .mark { fill: #f87171; } .good { fill: #4ade80; } .goodlead { stroke: #4ade80; }");
-  o.push("        .sheet { stroke: #64748b; } .front { fill: #0f172a; stroke: #94a3b8; } .back1 { fill: #172033; } .back2 { fill: #1e293b; }");
-  o.push("      }");
-  o.push("    </style>");
-  o.push("  </defs>");
+  o.push(
+    ...svgHead({
+      width: 1200,
+      height,
+      title: spec.title,
+      defs: [
+        '    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d97706"/></marker>',
+        '    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0.72" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>',
+      ],
+      css: [
+        "      .card { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }",
+        "      .more { stroke-dasharray: 4 4; }",
+        "      .glyph { fill: none; stroke: #475569; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }",
+        "      .ok { stroke: #16a34a; }",
+        `      .title { font-family: ${FONT}; fill: #0f172a; font-weight: 600; }`,
+        `      .muted { font-family: ${FONT}; fill: #64748b; font-weight: 500; }`,
+        `      .wrong { font-family: ${FONT}; fill: #b91c1c; font-weight: 600; }`,
+        "      .flow { fill: none; stroke: #d97706; stroke-width: 2; }",
+        "      .dot { fill: #d97706; }",
+        "      .bar { fill: #cbd5e1; }",
+        "      .pill { fill: #334155; }",
+        "      .code { fill: #1e293b; } .codeline { fill: #64748b; }",
+        "      .stale { fill: none; stroke: #dc2626; stroke-width: 2; stroke-dasharray: 3 3; } .dead { fill: #93c5fd; }",
+        "      .mark { fill: #dc2626; } .lead { stroke: #dc2626; stroke-width: 2; } .good { fill: #16a34a; } .goodlead { stroke: #16a34a; stroke-width: 2; }",
+        "      .fold { stroke: #dc2626; stroke-width: 2; stroke-dasharray: 6 5; }",
+        "      .rule { stroke: #94a3b8; stroke-width: 2; }",
+        "      .sheet { stroke: #94a3b8; stroke-width: 2; }",
+        "      .front { fill: #ffffff; stroke: #64748b; } .back1 { fill: #f4f7fa; } .back2 { fill: #eef2f7; }",
+        "      @media (prefers-color-scheme: dark) {",
+        "        .card { fill: #1e293b; stroke: #64748b; } .glyph { stroke: #cbd5e1; } .ok { stroke: #4ade80; }",
+        "        .title { fill: #f1f5f9; } .muted { fill: #94a3b8; } .wrong { fill: #fca5a5; } .bar { fill: #475569; } .pill { fill: #cbd5e1; } .rule { stroke: #64748b; }",
+        "        .code { fill: #020617; } .codeline { fill: #475569; } .dead { fill: #3b82f6; } .stale, .lead, .fold { stroke: #f87171; } .mark { fill: #f87171; } .good { fill: #4ade80; } .goodlead { stroke: #4ade80; }",
+        "        .sheet { stroke: #64748b; } .front { fill: #0f172a; stroke: #94a3b8; } .back1 { fill: #172033; } .back2 { fill: #1e293b; }",
+        "      }",
+      ],
+    })
+  );
 }
 
 // Two problems (or two parts) tied to the same place would draw their marks and leaders on top of each other;
@@ -253,7 +249,7 @@ function renderBeforeAfter(spec) {
     o.push(`  <text class="title" x="${ax + 288}" y="${y + 5}" font-size="15">${esc(p.label)}</text>`);
   }
   if (spec.after.backing) {
-    o.push(`  <g class="glyph ok" transform="translate(${ax + 38},${ay + 322})"><circle cx="10" cy="10" r="8"/><path d="M6.5,10 l2.5,2.5 4.5,-5"/></g>`);
+    o.push(`  ${okBadge(ax + 38, ay + 322)}`);
     o.push(`  <text class="muted" x="${ax + 66}" y="${ay + 337}" font-size="15">${esc(spec.after.backing)}</text>`);
   }
   o.push(`  <text class="title" x="${ax + 130}" y="462" font-size="17" text-anchor="middle">${esc(spec.after.label)}</text>`);
@@ -281,7 +277,7 @@ function renderFanFlat(spec) {
     o.push(`    ${glyph(s.icon, 97, y + 20, 44)}`);
     o.push(`    <text class="title" x="119" y="${y + 96}" font-size="19" text-anchor="middle">${esc(s.label)}</text></g>`);
     const lean = Math.sign(cy - mid);
-    o.push(`  <path class="flow" d="M220,${cy} C 272,${cy} 300,${mid + lean * 45} 336,${mid + lean * 15}" marker-end="url(#arrow)"/>`);
+    o.push(`  ${flowCurve({ x1: 220, y1: cy, c1x: 272, c1y: cy, c2x: 300, c2y: mid + lean * 45, x2: 336, y2: mid + lean * 15, marker: true })}`);
     if (s.gives) o.push(`  <text class="muted" x="278" y="${lean > 0 ? cy + 33 : cy - 17}" font-size="15" text-anchor="middle">${esc(s.gives)}</text>`);
   });
   o.push(`  <circle class="dot" cx="352" cy="${mid}" r="6"/>`);
@@ -289,15 +285,13 @@ function renderFanFlat(spec) {
   rows.forEach((r, i) => {
     const x = 443 + 14 * Math.min(i, n - 1 - i, 3);
     const y = 22 + 54 * i;
-    o.push(`  <path class="flow" d="M358,${mid} C 412,${mid} 422,${y + 20} ${x - 6},${y + 20}" marker-end="url(#arrow)"/>`);
-    o.push(`  <g transform="translate(${x},${y})"><rect class="card${r.more ? " more" : ""}" x="0" y="0" width="210" height="40" rx="10"/>`);
-    o.push(`    ${glyph(r.icon, 14, 10, 20)}`);
-    o.push(`    <text class="${r.more ? "muted" : "title"}" x="48" y="26" font-size="17">${esc(r.label)}</text></g>`);
+    o.push(`  ${flowCurve({ x1: 358, y1: mid, c1x: 412, c1y: mid, c2x: 422, c2y: y + 20, x2: x - 6, y2: y + 20, marker: true })}`);
+    for (const line of flatCard({ x, y, icon: r.icon, label: r.label, more: r.more })) o.push(line);
   });
   rows.forEach((_, i) => {
     const x = 443 + 14 * Math.min(i, n - 1 - i, 3) + 210;
     const y = 22 + 54 * i + 20;
-    o.push(`  <path class="flow" d="M${x},${y} C ${x + 60},${y} 780,${mid} 844,${mid}"/>`);
+    o.push(`  ${flowCurve({ x1: x, y1: y, c1x: x + 60, c1y: y, c2x: 780, c2y: mid, x2: 844, y2: mid })}`);
   });
   o.push(`  <circle class="dot" cx="850" cy="${mid}" r="6"/>`);
   o.push(`  <path class="flow" d="M856,${mid} L 888,${mid}" marker-end="url(#arrow)"/>`);
@@ -329,66 +323,63 @@ const HUB_BASE = { cx: 370, r: 34, ring: 45 };
 // same spec must always draw the same bytes.
 const CARD_TILT = [-1.2, 0.9, -0.6, 1.4, -1.5, 1.1, -0.8, 1.3, -1.0];
 
-function chartHeadline(headline, brandWord) {
-  const idx = brandWord ? headline.indexOf(brandWord) : -1;
-  if (idx === -1) return esc(headline);
-  const before = headline.slice(0, idx);
-  const after = headline.slice(idx + brandWord.length);
-  return `${esc(before)}<tspan class="brass">${esc(brandWord)}</tspan>${esc(after)}`;
-}
-
 function chartHead(o, spec, height) {
-  o.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CHART_W} ${height}" width="${CHART_W}" height="${height}" role="img" aria-labelledby="hero-title">`);
-  o.push(`  <title id="hero-title">${esc(spec.title)}</title>`);
-  o.push("  <defs>");
-  o.push('    <filter id="rough" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>');
-  o.push('    <filter id="roughds" x="-20%" y="-30%" width="140%" height="170%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="d"/><feDropShadow in="d" dx="1" dy="3" stdDeviation="2.5" flood-color="#2a1d0c" flood-opacity="0.2"/></filter>');
-  o.push('    <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>');
-  o.push('    <radialGradient id="vignette" cx="50%" cy="45%" r="75%"><stop offset="60%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#3b2a12" stop-opacity="0.16"/></radialGradient>');
-  o.push("    <style>");
-  o.push(`      .serif { font-family: ${SERIF}; }`);
-  o.push(`      .sans { font-family: ${FONT}; }`);
-  o.push(`      .hand { font-family: ${HAND}; }`);
-  o.push("      .bg { fill: #f3ead3; } .grain { opacity: 0.09; }");
-  o.push("      .rhumb { fill: none; stroke: #1f2d45; stroke-width: 0.8; opacity: 0.1; }");
-  o.push("      .ink { fill: #1f2d45; } .inks { stroke: #1f2d45; } .muted { fill: #6b5d48; } .sound { fill: #6b5d48; opacity: 0.45; font-style: italic; }");
-  o.push("      .brass { fill: #a8741f; } .brass-s { stroke: #b8862f; }");
-  o.push("      .star-fill { fill: #1f2d45; } .star-open { fill: #f7f0de; stroke: #1f2d45; stroke-width: 1.2; }");
-  o.push("      .ring { fill: none; stroke: #1f2d45; stroke-width: 1.2; }");
-  o.push("      .paper { fill: #fbf5e6; stroke: #3b3326; stroke-width: 1.8; } .chrome { fill: #efe5cf; stroke: #9c8b6e; stroke-width: 1.2; } .dot { fill: #9c8b6e; } .bar { fill: #e0d4ba; }");
-  o.push('      .rope { fill: none; stroke: #a67c45; stroke-width: 4.5; stroke-linecap: round; }');
-  o.push('      .twist { fill: none; stroke: #6e4e27; stroke-width: 4.5; stroke-dasharray: 1.6 4.4; }');
-  o.push("      .grommet { fill: #f3ead3; stroke: #b8862f; stroke-width: 3; }");
-  o.push("      .hub { fill: #1f3a66; stroke: #b8862f; stroke-width: 3.5; }");
-  o.push("      .anchor { fill: none; stroke: #f7f0de; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }");
-  o.push("      .gull { fill: none; stroke: #3b3326; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }");
-  o.push("      .stars, .moon { display: none; }");
-  o.push("      .w1 { fill: #d3dfdc; } .w2 { fill: #a9c3c4; } .w3 { fill: #7ea3ab; }");
-  o.push("      .crest { fill: none; stroke: #1f2d45; stroke-width: 1.2; stroke-linecap: round; opacity: 0.45; }");
-  o.push("      .hull { fill: #9a6a3a; stroke: #2b2118; stroke-width: 1.6; stroke-linejoin: round; } .sail { fill: #f9f2df; stroke: #2b2118; stroke-width: 1.6; stroke-linejoin: round; } .line { fill: none; stroke: #2b2118; stroke-width: 1.3; }");
-  o.push("      .c-navy { fill: #fbf5e6; stroke: #2b4a7e; stroke-width: 2; } .c-sea { fill: #fbf5e6; stroke: #2f7d6d; stroke-width: 2; } .c-ochre { fill: #fbf5e6; stroke: #b7791f; stroke-width: 2; } .c-plum { fill: #fbf5e6; stroke: #7a3b69; stroke-width: 2; }");
-  o.push("      .g { fill: none; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }");
-  o.push("      .i-navy { stroke: #2b4a7e; } .i-sea { stroke: #2f7d6d; } .i-ochre { stroke: #b7791f; } .i-plum { stroke: #7a3b69; }");
-  o.push("      .vig { fill: url(#vignette); }");
-  o.push("      @media (prefers-color-scheme: dark) {");
-  o.push("        .bg { fill: #122036; } .grain { opacity: 0.07; }");
-  o.push("        .rhumb { stroke: #c9d3e3; opacity: 0.1; }");
-  o.push("        .ink { fill: #ece3cc; } .inks { stroke: #ece3cc; } .muted { fill: #a6b3c8; } .sound { fill: #a6b3c8; }");
-  o.push("        .brass { fill: #e0b562; } .brass-s { stroke: #d8a94f; }");
-  o.push("        .star-fill { fill: #ece3cc; } .star-open { fill: #122036; stroke: #ece3cc; } .ring { stroke: #ece3cc; }");
-  o.push("        .paper { fill: #1a2a44; stroke: #7f8fa8; } .chrome { fill: #22344f; stroke: #6d7c95; } .dot { fill: #6d7c95; } .bar { fill: #30425f; }");
-  o.push("        .rope { stroke: #cfa66a; } .twist { stroke: #8a6a3c; } .grommet { fill: #122036; stroke: #d8a94f; }");
-  o.push("        .hub { fill: #28508f; stroke: #d8a94f; }");
-  o.push("        .gull { stroke: #c9d3e3; }");
-  o.push("        .stars { display: inline; fill: #ece3cc; } .moon { display: inline; fill: #ece3cc; }");
-  o.push("        .w1 { fill: #1b3252; } .w2 { fill: #1f3d63; } .w3 { fill: #254a78; } .crest { stroke: #c9d3e3; opacity: 0.35; }");
-  o.push("        .hull { fill: #8a5d33; stroke: #ece3cc; } .sail { fill: #ece3cc; stroke: #0e1a2c; } .line { stroke: #ece3cc; }");
-  o.push("        .c-navy { fill: #1a2a44; stroke: #8fb4ff; } .c-sea { fill: #1a2a44; stroke: #6fd1b9; } .c-ochre { fill: #1a2a44; stroke: #f0c064; } .c-plum { fill: #1a2a44; stroke: #d69ad0; }");
-  o.push("        .i-navy { stroke: #8fb4ff; } .i-sea { stroke: #6fd1b9; } .i-ochre { stroke: #f0c064; } .i-plum { stroke: #d69ad0; }");
-  o.push("        .vig { opacity: 0.6; }");
-  o.push("      }");
-  o.push("    </style>");
-  o.push("  </defs>");
+  o.push(
+    ...svgHead({
+      width: CHART_W,
+      height,
+      title: spec.title,
+      defs: [
+        '    <filter id="rough" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>',
+        '    <filter id="roughds" x="-20%" y="-30%" width="140%" height="170%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="d"/><feDropShadow in="d" dx="1" dy="3" stdDeviation="2.5" flood-color="#2a1d0c" flood-opacity="0.2"/></filter>',
+        '    <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>',
+        '    <radialGradient id="vignette" cx="50%" cy="45%" r="75%"><stop offset="60%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#3b2a12" stop-opacity="0.16"/></radialGradient>',
+      ],
+      css: [
+        `      .serif { font-family: ${SERIF}; }`,
+        `      .sans { font-family: ${FONT}; }`,
+        `      .hand { font-family: ${HAND}; }`,
+        "      .bg { fill: #f3ead3; } .grain { opacity: 0.09; }",
+        "      .rhumb { fill: none; stroke: #1f2d45; stroke-width: 0.8; opacity: 0.1; }",
+        "      .ink { fill: #1f2d45; } .inks { stroke: #1f2d45; } .muted { fill: #6b5d48; } .sound { fill: #6b5d48; opacity: 0.45; font-style: italic; }",
+        "      .brass { fill: #a8741f; } .brass-s { stroke: #b8862f; }",
+        "      .star-fill { fill: #1f2d45; } .star-open { fill: #f7f0de; stroke: #1f2d45; stroke-width: 1.2; }",
+        "      .ring { fill: none; stroke: #1f2d45; stroke-width: 1.2; }",
+        "      .paper { fill: #fbf5e6; stroke: #3b3326; stroke-width: 1.8; } .chrome { fill: #efe5cf; stroke: #9c8b6e; stroke-width: 1.2; } .dot { fill: #9c8b6e; } .bar { fill: #e0d4ba; }",
+        '      .rope { fill: none; stroke: #a67c45; stroke-width: 4.5; stroke-linecap: round; }',
+        '      .twist { fill: none; stroke: #6e4e27; stroke-width: 4.5; stroke-dasharray: 1.6 4.4; }',
+        "      .grommet { fill: #f3ead3; stroke: #b8862f; stroke-width: 3; }",
+        "      .hub { fill: #1f3a66; stroke: #b8862f; stroke-width: 3.5; }",
+        "      .anchor { fill: none; stroke: #f7f0de; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }",
+        "      .gull { fill: none; stroke: #3b3326; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }",
+        "      .stars, .moon { display: none; }",
+        "      .w1 { fill: #d3dfdc; } .w2 { fill: #a9c3c4; } .w3 { fill: #7ea3ab; }",
+        "      .crest { fill: none; stroke: #1f2d45; stroke-width: 1.2; stroke-linecap: round; opacity: 0.45; }",
+        "      .hull { fill: #9a6a3a; stroke: #2b2118; stroke-width: 1.6; stroke-linejoin: round; } .sail { fill: #f9f2df; stroke: #2b2118; stroke-width: 1.6; stroke-linejoin: round; } .line { fill: none; stroke: #2b2118; stroke-width: 1.3; }",
+        "      .c-navy { fill: #fbf5e6; stroke: #2b4a7e; stroke-width: 2; } .c-sea { fill: #fbf5e6; stroke: #2f7d6d; stroke-width: 2; } .c-ochre { fill: #fbf5e6; stroke: #b7791f; stroke-width: 2; } .c-plum { fill: #fbf5e6; stroke: #7a3b69; stroke-width: 2; }",
+        "      .g { fill: none; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }",
+        "      .i-navy { stroke: #2b4a7e; } .i-sea { stroke: #2f7d6d; } .i-ochre { stroke: #b7791f; } .i-plum { stroke: #7a3b69; }",
+        "      .vig { fill: url(#vignette); }",
+        "      @media (prefers-color-scheme: dark) {",
+        "        .bg { fill: #122036; } .grain { opacity: 0.07; }",
+        "        .rhumb { stroke: #c9d3e3; opacity: 0.1; }",
+        "        .ink { fill: #ece3cc; } .inks { stroke: #ece3cc; } .muted { fill: #a6b3c8; } .sound { fill: #a6b3c8; }",
+        "        .brass { fill: #e0b562; } .brass-s { stroke: #d8a94f; }",
+        "        .star-fill { fill: #ece3cc; } .star-open { fill: #122036; stroke: #ece3cc; } .ring { stroke: #ece3cc; }",
+        "        .paper { fill: #1a2a44; stroke: #7f8fa8; } .chrome { fill: #22344f; stroke: #6d7c95; } .dot { fill: #6d7c95; } .bar { fill: #30425f; }",
+        "        .rope { stroke: #cfa66a; } .twist { stroke: #8a6a3c; } .grommet { fill: #122036; stroke: #d8a94f; }",
+        "        .hub { fill: #28508f; stroke: #d8a94f; }",
+        "        .gull { stroke: #c9d3e3; }",
+        "        .stars { display: inline; fill: #ece3cc; } .moon { display: inline; fill: #ece3cc; }",
+        "        .w1 { fill: #1b3252; } .w2 { fill: #1f3d63; } .w3 { fill: #254a78; } .crest { stroke: #c9d3e3; opacity: 0.35; }",
+        "        .hull { fill: #8a5d33; stroke: #ece3cc; } .sail { fill: #ece3cc; stroke: #0e1a2c; } .line { stroke: #ece3cc; }",
+        "        .c-navy { fill: #1a2a44; stroke: #8fb4ff; } .c-sea { fill: #1a2a44; stroke: #6fd1b9; } .c-ochre { fill: #1a2a44; stroke: #f0c064; } .c-plum { fill: #1a2a44; stroke: #d69ad0; }",
+        "        .i-navy { stroke: #8fb4ff; } .i-sea { stroke: #6fd1b9; } .i-ochre { stroke: #f0c064; } .i-plum { stroke: #d69ad0; }",
+        "        .vig { opacity: 0.6; }",
+        "      }",
+      ],
+    })
+  );
 }
 
 // The soundings scattered across the water, each an [x, y, label] where y is measured at the pierless four-item
@@ -516,13 +507,8 @@ function renderFanChart(spec) {
   chartScene(o, height, delta);
 
   const hub = spec.hub; // assertChartShape has already required this.
-  if (spec.headline) {
-    assertHeadlineFits(spec.headline);
-    o.push(`  <text class="serif ink" x="400" y="42" font-size="27" font-weight="700" text-anchor="middle">${chartHeadline(spec.headline, hub.label)}</text>`);
-  }
-  if (spec.subhead) {
-    o.push(`  <text class="serif muted" x="400" y="68" font-size="16" font-style="italic" text-anchor="middle">${esc(spec.subhead)}</text>`);
-  }
+  if (spec.headline) assertHeadlineFits(spec.headline);
+  for (const line of chartHeadlineBlock({ headline: spec.headline, subhead: spec.subhead, brandWord: hub.label })) o.push(line);
 
   // The source: the one thing the reader does, drawn as a browser chrome with a green button.
   const source = spec.source ?? (spec.sources ?? [])[0];
@@ -537,17 +523,14 @@ function renderFanChart(spec) {
     o.push(`    ${rawGlyph(source.icon, 69, 270, 14.88, 'stroke="#f7f0de" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"')}`);
     o.push(`    <text class="sans" x="90" y="283" font-size="12.5" font-weight="600" fill="#f7f0de">${esc(source.label)}</text>`);
     if (source.note) o.push(`    <text class="serif muted" x="58" y="318" font-size="12" font-style="italic">${esc(source.note)}</text>`);
-    o.push('    <circle class="grommet" cx="266" cy="255" r="6.5"/>');
+    o.push(`    ${grommet(266, 255)}`);
     o.push("  </g>");
     // The source card itself never moves; only the end tied to the hub follows it when the hub does.
-    o.push(`  <g filter="url(#rough)"><path class="rope" d="M272,255 C 295,248 314,${hubCy + 7} 334,${hubCy}"/><path class="twist" d="M272,255 C 295,248 314,${hubCy + 7} 334,${hubCy}"/></g>`);
+    o.push(`  <g filter="url(#rough)">${ropeLink({ x1: 272, y1: 255, c1x: 295, c1y: 248, c2x: 314, c2y: hubCy + 7, x2: 334, y2: hubCy })}</g>`);
   }
 
   // The hub: the product's own mark, inside a coiled rope ring.
-  o.push(`  <g filter="url(#rough)"><circle cx="${HUB.cx}" cy="${HUB.cy}" r="${HUB.ring}" class="rope" stroke-width="3.5"/><circle cx="${HUB.cx}" cy="${HUB.cy}" r="${HUB.ring}" class="twist" stroke-width="3.5"/></g>`);
-  o.push(`  <circle class="hub" cx="${HUB.cx}" cy="${HUB.cy}" r="${HUB.r}" filter="url(#roughds)"/>`);
-  o.push(`  ${themedGlyph(hub.icon, HUB.cx - 15.6, HUB.cy - 13.8, 31.2, "anchor")}`);
-  if (hub.label) o.push(`  <text class="serif brass" x="${HUB.cx}" y="${HUB.cy + 66}" font-size="17" font-weight="700" text-anchor="middle">${esc(hub.label)}</text>`);
+  for (const line of chartHub({ cx: HUB.cx, cy: HUB.cy, r: HUB.r, ring: HUB.ring, icon: hub.icon, label: hub.label })) o.push(line);
 
   // The aside: the one handwritten line, split on its sentence breaks, with a curly line pointing at the hub.
   if (spec.aside) {
@@ -575,24 +558,17 @@ function renderFanChart(spec) {
   o.push('  <g filter="url(#rough)">');
   for (const p of positions) {
     const midX = Math.round(hubEdgeX + (p.cx - hubEdgeX) / 2);
-    o.push(`    <path class="rope" d="M${hubEdgeX},${HUB.cy} C ${midX},${HUB.cy} ${midX},${p.cy} ${p.cx + 10},${p.cy}"/><path class="twist" d="M${hubEdgeX},${HUB.cy} C ${midX},${HUB.cy} ${midX},${p.cy} ${p.cx + 10},${p.cy}"/>`);
+    o.push(`    ${ropeLink({ x1: hubEdgeX, y1: HUB.cy, c1x: midX, c1y: HUB.cy, c2x: midX, c2y: p.cy, x2: p.cx + 10, y2: p.cy })}`);
   }
   o.push("  </g>");
 
   handled.forEach((h, i) => {
     const theme = h.theme ?? THEMES[i % THEMES.length];
     const p = positions[i];
-    const top = p.cy - cardH / 2;
     const tilt = CARD_TILT[i % CARD_TILT.length];
     assertFits(h.label, 24, "card");
     if (h.sub) assertFits(h.sub, 32, "card");
-    o.push(`  <g transform="rotate(${tilt} ${p.cx + cardW / 2} ${p.cy})">`);
-    o.push(`    <rect class="c-${theme}" x="${p.cx}" y="${top}" width="${cardW}" height="${cardH}" rx="6" filter="url(#roughds)"/>`);
-    o.push(`    <circle class="grommet" cx="${p.cx + 16}" cy="${p.cy}" r="6.5"/>`);
-    o.push(`    ${themedGlyph(h.icon, p.cx + 36, top + 20, 20, `g i-${theme}`)}`);
-    o.push(`    <text class="serif ink" x="${p.cx + 72}" y="${p.cy - 3}" font-size="19" font-weight="700">${esc(h.label)}</text>`);
-    if (h.sub) o.push(`    <text class="serif muted" x="${p.cx + 72}" y="${p.cy + 18}" font-size="13.5" font-style="italic">${esc(h.sub)}</text>`);
-    o.push("  </g>");
+    for (const line of chartHandledCard({ cx: p.cx, cy: p.cy, w: cardW, h: cardH, tilt, theme, icon: h.icon, label: h.label, sub: h.sub })) o.push(line);
   });
 
   if (spec.more) {
@@ -657,50 +633,47 @@ const WINDOW_BAR_WIDTHS = [
   [94, 68],
 ];
 
-function windowHeadline(headline, brandWord) {
-  const idx = brandWord ? headline.indexOf(brandWord) : -1;
-  if (idx === -1) return esc(headline);
-  const before = headline.slice(0, idx);
-  const after = headline.slice(idx + brandWord.length);
-  return `${esc(before)}<tspan class="accent">${esc(brandWord)}</tspan>${esc(after)}`;
-}
-
 function windowHead(o, spec, height) {
-  o.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WINDOW_W} ${height}" width="${WINDOW_W}" height="${height}" role="img" aria-labelledby="hero-title">`);
-  o.push(`  <title id="hero-title">${esc(spec.title)}</title>`);
-  o.push("  <defs>");
-  o.push('    <marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,1 L9,5 L1,9" class="accent-s" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>');
-  o.push('    <filter id="soft" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.10"/></filter>');
-  o.push("    <style>");
-  o.push(`      .sans { font-family: ${FONT}; }`);
-  o.push("      .bg { fill: #f4f6f9; }");
-  o.push('      .panel { fill: #ffffff; stroke: #d5dbe3; stroke-width: 1; }');
-  o.push('      .ink { fill: #111827; } .inks { stroke: #111827; }');
-  o.push("      .muted { fill: #6b7280; }");
-  o.push("      .faint { fill: #9ca3af; }");
-  o.push('      .accent { fill: #2563eb; } .accent-s { stroke: #2563eb; }');
-  o.push('      .range { fill: #dbeafe; stroke: #2563eb; stroke-width: 1.5; }');
-  o.push('      .cell { fill: none; stroke: #e5e7eb; stroke-width: 1; }');
-  o.push('      .bar { fill: #e5e7eb; } .bar2 { fill: #d1d5db; }');
-  o.push("      .rowline { stroke: #eef0f3; stroke-width: 1; }");
-  o.push("      .g { fill: none; stroke: #111827; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }");
-  o.push("      .g-muted { fill: none; stroke: #9ca3af; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }");
-  o.push('      .feed { fill: none; stroke: #2563eb; stroke-width: 1.2; opacity: 0.45; }');
-  o.push('      .hand { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; }');
-  o.push('      .sheet { fill: #ffffff; stroke: #111827; stroke-width: 1.3; }');
-  o.push('      .sheet-back { fill: #eef0f3; stroke: #9ca3af; stroke-width: 1; }');
-  o.push("      .total { fill: #111827; }");
-  o.push("      .mark { fill: #ffffff; }");
-  o.push("      @media (prefers-color-scheme: dark) {");
-  o.push("        .bg { fill: #0f141b; } .panel { fill: #161c26; stroke: #2a3341; }");
-  o.push("        .ink { fill: #e5e7eb; } .inks { stroke: #e5e7eb; } .muted { fill: #9ca3af; } .faint { fill: #6b7280; }");
-  o.push('        .accent { fill: #60a5fa; } .accent-s { stroke: #60a5fa; } .range { fill: #1e3a5f; stroke: #60a5fa; }');
-  o.push("        .cell { stroke: #2a3341; } .bar { fill: #2a3341; } .bar2 { fill: #374151; } .rowline { stroke: #232b37; }");
-  o.push("        .g { stroke: #e5e7eb; } .g-muted { stroke: #6b7280; } .feed, .hand { stroke: #60a5fa; }");
-  o.push('        .sheet { fill: #161c26; stroke: #9ca3af; } .sheet-back { fill: #1f2733; stroke: #4b5563; } .total { fill: #e5e7eb; } .mark { fill: #0f141b; }');
-  o.push("      }");
-  o.push("    </style>");
-  o.push("  </defs>");
+  o.push(
+    ...svgHead({
+      width: WINDOW_W,
+      height,
+      title: spec.title,
+      defs: [
+        '    <marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,1 L9,5 L1,9" class="accent-s" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>',
+        '    <filter id="soft" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.10"/></filter>',
+      ],
+      css: [
+        `      .sans { font-family: ${FONT}; }`,
+        "      .bg { fill: #f4f6f9; }",
+        '      .panel { fill: #ffffff; stroke: #d5dbe3; stroke-width: 1; }',
+        '      .ink { fill: #111827; } .inks { stroke: #111827; }',
+        "      .muted { fill: #6b7280; }",
+        "      .faint { fill: #9ca3af; }",
+        '      .accent { fill: #2563eb; } .accent-s { stroke: #2563eb; }',
+        '      .range { fill: #dbeafe; stroke: #2563eb; stroke-width: 1.5; }',
+        '      .cell { fill: none; stroke: #e5e7eb; stroke-width: 1; }',
+        '      .bar { fill: #e5e7eb; } .bar2 { fill: #d1d5db; }',
+        "      .rowline { stroke: #eef0f3; stroke-width: 1; }",
+        "      .g { fill: none; stroke: #111827; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }",
+        "      .g-muted { fill: none; stroke: #9ca3af; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }",
+        '      .feed { fill: none; stroke: #2563eb; stroke-width: 1.2; opacity: 0.45; }',
+        '      .hand { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; }',
+        '      .sheet { fill: #ffffff; stroke: #111827; stroke-width: 1.3; }',
+        '      .sheet-back { fill: #eef0f3; stroke: #9ca3af; stroke-width: 1; }',
+        "      .total { fill: #111827; }",
+        "      .mark { fill: #ffffff; }",
+        "      @media (prefers-color-scheme: dark) {",
+        "        .bg { fill: #0f141b; } .panel { fill: #161c26; stroke: #2a3341; }",
+        "        .ink { fill: #e5e7eb; } .inks { stroke: #e5e7eb; } .muted { fill: #9ca3af; } .faint { fill: #6b7280; }",
+        '        .accent { fill: #60a5fa; } .accent-s { stroke: #60a5fa; } .range { fill: #1e3a5f; stroke: #60a5fa; }',
+        "        .cell { stroke: #2a3341; } .bar { fill: #2a3341; } .bar2 { fill: #374151; } .rowline { stroke: #232b37; }",
+        "        .g { stroke: #e5e7eb; } .g-muted { stroke: #6b7280; } .feed, .hand { stroke: #60a5fa; }",
+        '        .sheet { fill: #161c26; stroke: #9ca3af; } .sheet-back { fill: #1f2733; stroke: #4b5563; } .total { fill: #e5e7eb; } .mark { fill: #0f141b; }',
+        "      }",
+      ],
+    })
+  );
 }
 
 // The window style draws exactly two sources (the inbox panel, then the calendar panel), a
@@ -734,8 +707,7 @@ function renderFanWindow(spec) {
   o.push(`  <rect class="bg" x="0" y="0" width="${WINDOW_W}" height="${height}"/>`);
 
   const hub = spec.hub;
-  if (spec.headline) o.push(`  <text class="sans ink" x="450" y="40" font-size="25" font-weight="700" text-anchor="middle">${windowHeadline(spec.headline, hub.label)}</text>`);
-  if (spec.subhead) o.push(`  <text class="sans muted" x="450" y="62" font-size="14" font-weight="500" text-anchor="middle">${esc(spec.subhead)}</text>`);
+  for (const line of windowHeadlineBlock({ headline: spec.headline, subhead: spec.subhead, brandWord: hub.label })) o.push(line);
 
   const [inboxSource, calSource] = spec.sources;
   const inboxRight = WINDOW_INBOX_X + WINDOW_INBOX_W;
@@ -744,10 +716,17 @@ function renderFanWindow(spec) {
   // label, subject bar, preview bar, amount bar); "and more" is a muted row with only a
   // subject bar. Its height follows the row count; the header icon is the style's own
   // fixed envelope, not looked up from any icon field.
-  o.push(`  <rect class="panel" x="${WINDOW_INBOX_X}" y="${WINDOW_PANEL_TOP}" width="${WINDOW_INBOX_W}" height="${inboxH}" rx="10" filter="url(#soft)"/>`);
-  o.push(`  <g class="g" transform="translate(${WINDOW_INBOX_X + 18},106) scale(0.85)"><rect x="0" y="3" width="20" height="14" rx="2"/><path d="M0,6 L10,13 L20,6"/></g>`);
-  o.push(`  <text class="sans ink" x="${WINDOW_INBOX_X + 44}" y="120" font-size="15" font-weight="700">${esc(inboxSource.label)}</text>`);
-  if (inboxSource.gives) o.push(`  <text class="sans muted" x="${inboxRight - 18}" y="120" font-size="11" font-weight="500" text-anchor="end">${esc(inboxSource.gives)}</text>`);
+  for (const line of panelWithChrome({
+    x: WINDOW_INBOX_X,
+    y: WINDOW_PANEL_TOP,
+    w: WINDOW_INBOX_W,
+    h: inboxH,
+    iconGlyph: '<rect x="0" y="3" width="20" height="14" rx="2"/><path d="M0,6 L10,13 L20,6"/>',
+    labelX: WINDOW_INBOX_X + 44,
+    label: inboxSource.label,
+    gives: inboxSource.gives,
+  }))
+    o.push(`  ${line}`);
 
   const dividers = [];
   for (let i = 0; i <= n; i++) dividers.push(WINDOW_PANEL_TOP + WINDOW_HEADER_SPACE + WINDOW_ROW_H * i);
@@ -755,18 +734,8 @@ function renderFanWindow(spec) {
 
   rows.forEach((r, i) => {
     const top = dividers[i];
-    const iconCls = r.more ? "g-muted" : "g";
-    o.push(`  ${themedGlyph(r.icon, WINDOW_INBOX_X + 18, top + 9, 18, iconCls)}`);
-    const textCls = r.more ? "sans faint" : "sans ink";
-    o.push(`  <text class="${textCls}" x="${WINDOW_INBOX_X + 50}" y="${top + 23}" font-size="14" font-weight="600">${esc(r.label)}</text>`);
-    if (r.more) {
-      o.push(`  <rect class="bar" x="${WINDOW_INBOX_X + 110}" y="${top + 15}" width="70" height="6" rx="3"/>`);
-    } else {
-      const [w1, w2] = WINDOW_BAR_WIDTHS[i % WINDOW_BAR_WIDTHS.length];
-      o.push(
-        `  <rect class="bar" x="${WINDOW_INBOX_X + 110}" y="${top + 15}" width="${w1}" height="6" rx="3"/><rect class="bar2" x="${WINDOW_INBOX_X + 110}" y="${top + 26}" width="${w2}" height="5" rx="2.5"/><rect class="bar2" x="${inboxRight - 48}" y="${top + 18}" width="30" height="6" rx="3"/>`
-      );
-    }
+    const [w1, w2] = WINDOW_BAR_WIDTHS[i % WINDOW_BAR_WIDTHS.length];
+    for (const line of listRow({ x: WINDOW_INBOX_X, top, icon: r.icon, label: r.label, more: r.more, w1, w2, rightX: inboxRight })) o.push(`  ${line}`);
   });
 
   // Faint feed curves from each inbox row to the calendar range's left edge (fixed, since
@@ -781,42 +750,42 @@ function renderFanWindow(spec) {
 
   // The calendar panel: fixed height and a fixed five-row month grid, weekday letters, a
   // highlighted range of days with dots. None of this is data-driven beyond the header.
-  o.push(`  <rect class="panel" x="${WINDOW_CAL_X}" y="${WINDOW_PANEL_TOP}" width="${WINDOW_CAL_W}" height="${WINDOW_CAL_H}" rx="10" filter="url(#soft)"/>`);
-  o.push(`  <g class="g" transform="translate(${WINDOW_CAL_X + 18},106) scale(0.85)"><rect x="1" y="3" width="18" height="16" rx="2"/><path d="M1,8 h18 M6,1 v4 M14,1 v4"/></g>`);
-  o.push(`  <text class="sans ink" x="${WINDOW_CAL_X + 42}" y="120" font-size="15" font-weight="700">${esc(calSource.label)}</text>`);
-  if (calSource.gives) o.push(`  <text class="sans muted" x="${WINDOW_CAL_X + WINDOW_CAL_W - 18}" y="120" font-size="11" font-weight="500" text-anchor="end">${esc(calSource.gives)}</text>`);
-  const weekdayXs = [0, 1, 2, 3, 4, 5, 6].map((i) => WINDOW_CAL_X + 29 + 32 * i);
-  o.push(
-    `  <g class="sans faint" font-size="9" font-weight="600" text-anchor="middle">${["S", "M", "T", "W", "T", "F", "S"].map((d, i) => `<text x="${weekdayXs[i]}" y="141">${d}</text>`).join("")}</g>`
-  );
-  const calColX = [0, 1, 2, 3, 4, 5, 6].map((i) => WINDOW_CAL_X + 14 + 32 * i);
-  const calRowY = [0, 1, 2, 3, 4].map((i) => WINDOW_PANEL_TOP + 58 + 32 * i);
-  const cell = (x, y) => `<rect x="${x}" y="${y}" width="30" height="28" rx="3"/>`;
-  o.push("  <g class=\"cell\">");
-  o.push(`    ${calColX.map((x) => cell(x, calRowY[0])).join("")}`);
-  o.push(`    ${cell(calColX[0], calRowY[1])}${cell(calColX[6], calRowY[1])}`);
-  for (const ry of [calRowY[2], calRowY[3], calRowY[4]]) o.push(`    ${calColX.map((x) => cell(x, ry)).join("")}`);
-  o.push("  </g>");
-  o.push(`  <rect class="range" x="${calColX[1]}" y="${calRowY[1]}" width="158" height="28" rx="4"/>`);
-  o.push(`  <g class="accent">${[1, 2, 3, 4, 5].map((i) => `<circle cx="${calColX[i] + 15}" cy="200" r="2"/>`).join("")}</g>`);
+  for (const line of panelWithChrome({
+    x: WINDOW_CAL_X,
+    y: WINDOW_PANEL_TOP,
+    w: WINDOW_CAL_W,
+    h: WINDOW_CAL_H,
+    iconGlyph: '<rect x="1" y="3" width="18" height="16" rx="2"/><path d="M1,8 h18 M6,1 v4 M14,1 v4"/>',
+    labelX: WINDOW_CAL_X + 42,
+    label: calSource.label,
+    gives: calSource.gives,
+  }))
+    o.push(`  ${line}`);
+  for (const line of calendarGrid({ x: WINDOW_CAL_X, top: WINDOW_PANEL_TOP })) o.push(line);
 
   // The one accent handoff arrow from the calendar panel's right edge to the packet, the hub
   // disc with its chevron mark, and the hub's label. Fixed, since the calendar panel never
   // moves regardless of the inbox panel's height.
   const calRight = WINDOW_CAL_X + WINDOW_CAL_W;
-  o.push(`  <path class="hand" d="M${calRight},${WINDOW_ARROW_Y} H${calRight + 62}" marker-end="url(#head)"/>`);
-  o.push(`  <circle class="accent" cx="${calRight + 30}" cy="${WINDOW_ARROW_Y}" r="12"/>`);
-  o.push(`  <path class="mark" d="M${calRight + 23},${WINDOW_ARROW_Y + 5} L${calRight + 30},${WINDOW_ARROW_Y - 7} L${calRight + 37},${WINDOW_ARROW_Y + 5} L${calRight + 30},${WINDOW_ARROW_Y + 1} Z"/>`);
-  if (hub.label) o.push(`  <text class="sans accent" x="${calRight + 30}" y="${WINDOW_ARROW_Y + 30}" font-size="11" font-weight="700" text-anchor="middle">${esc(hub.label)}</text>`);
+  for (const line of windowHandoffHub({ calRight, arrowY: WINDOW_ARROW_Y, label: hub.label })) o.push(line);
 
   // The deliverable: a summary sheet with rows and a total, two sheets stacked behind it,
   // the deliverable's own label ("one PDF") and backing line. Its own line-item rows are
   // decorative and fixed, since the spec carries no line-item list.
   const d = spec.deliverable;
   const sheetX = calRight + 68;
-  o.push(`  <rect class="sheet-back" x="${sheetX + 12}" y="156" width="150" height="176" rx="3"/>`);
-  o.push(`  <rect class="sheet-back" x="${sheetX + 6}" y="150" width="150" height="176" rx="3"/>`);
-  o.push(`  <rect class="sheet" x="${sheetX}" y="144" width="150" height="176" rx="3" filter="url(#soft)"/>`);
+  for (const line of stackedSheet({
+    x: sheetX,
+    y: 144,
+    w: 150,
+    h: 176,
+    rx: 3,
+    back2: { dx: 12, dy: 12, cls: "sheet-back" },
+    back1: { dx: 6, dy: 6, cls: "sheet-back" },
+    frontClass: "sheet",
+    filter: "soft",
+  }))
+    o.push(`  ${line}`);
   o.push(`  <text class="sans ink" x="${sheetX + 14}" y="168" font-size="13" font-weight="700">${esc(d.heading ?? d.label)}</text>`);
   o.push(`  <path class="inks" d="M${sheetX + 14},176 h122" stroke-width="1" opacity="0.35"/>`);
   [66, 54, 74, 48, 62, 58].forEach((w, i) => {
