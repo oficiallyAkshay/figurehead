@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 490" width="1200" height="490" role="img" aria-labelledby="hero-title">
+  <title id="hero-title">A long README that opens on code, carries a stale badge and a dead link, and loses the reader at the fold becomes a short page that leads with what they get, shows one picture, and is checked on every push</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d97706"/></marker>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0.72" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>
+    <style>
+      .card { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }
+      .more { stroke-dasharray: 4 4; }
+      .glyph { fill: none; stroke: #475569; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+      .ok { stroke: #16a34a; }
+      .title { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #0f172a; font-weight: 600; }
+      .muted { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #64748b; font-weight: 500; }
+      .wrong { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #b91c1c; font-weight: 600; }
+      .flow { fill: none; stroke: #d97706; stroke-width: 2; }
+      .dot { fill: #d97706; }
+      .bar { fill: #cbd5e1; }
+      .pill { fill: #334155; }
+      .code { fill: #1e293b; } .codeline { fill: #64748b; }
+      .stale { fill: none; stroke: #dc2626; stroke-width: 2; stroke-dasharray: 3 3; } .dead { fill: #93c5fd; }
+      .mark { fill: #dc2626; } .lead { stroke: #dc2626; stroke-width: 2; } .good { fill: #16a34a; } .goodlead { stroke: #16a34a; stroke-width: 2; }
+      .fold { stroke: #dc2626; stroke-width: 2; stroke-dasharray: 6 5; }
+      .rule { stroke: #94a3b8; stroke-width: 2; }
+      .sheet { stroke: #94a3b8; stroke-width: 2; }
+      .front { fill: #ffffff; stroke: #64748b; } .back1 { fill: #f4f7fa; } .back2 { fill: #eef2f7; }
+      @media (prefers-color-scheme: dark) {
+        .card { fill: #1e293b; stroke: #64748b; } .glyph { stroke: #cbd5e1; } .ok { stroke: #4ade80; }
+        .title { fill: #f1f5f9; } .muted { fill: #94a3b8; } .wrong { fill: #fca5a5; } .bar { fill: #475569; } .pill { fill: #cbd5e1; } .rule { stroke: #64748b; }
+        .code { fill: #020617; } .codeline { fill: #475569; } .dead { fill: #3b82f6; } .stale, .lead, .fold { stroke: #f87171; } .mark { fill: #f87171; } .good { fill: #4ade80; } .goodlead { stroke: #4ade80; }
+        .sheet { stroke: #64748b; } .front { fill: #0f172a; stroke: #94a3b8; } .back1 { fill: #172033; } .back2 { fill: #1e293b; }
+      }
+    </style>
+  </defs>
+  <mask id="long"><rect x="0" y="0" width="1200" height="430" fill="url(#fade)"/></mask>
+  <g mask="url(#long)">
+    <rect class="sheet front" x="216" y="20" width="260" height="410" rx="10"/>
+    <rect class="pill" x="236" y="44" width="120" height="12" rx="6"/>
+    <rect class="bar" x="236" y="70" width="220" height="8" rx="4"/><rect class="bar" x="236" y="84" width="200" height="8" rx="4"/><rect class="bar" x="236" y="98" width="180" height="8" rx="4"/>
+    <rect class="code" x="236" y="124" width="220" height="58" rx="6"/><rect class="codeline" x="248" y="136" width="120" height="6" rx="3"/><rect class="codeline" x="248" y="150" width="168" height="6" rx="3"/><rect class="codeline" x="248" y="164" width="96" height="6" rx="3"/>
+    <rect class="bar" x="236" y="198" width="210" height="8" rx="4"/><rect class="bar" x="236" y="212" width="220" height="8" rx="4"/><rect class="bar" x="236" y="226" width="150" height="8" rx="4"/>
+    <rect class="pill" x="236" y="246" width="44" height="10" rx="5"/><rect class="pill" x="288" y="246" width="44" height="10" rx="5"/><rect class="stale" x="340" y="244" width="52" height="14" rx="7"/>
+    <rect class="bar" x="236" y="274" width="200" height="8" rx="4"/><rect class="dead" x="236" y="288" width="96" height="8" rx="4"/><rect class="bar" x="340" y="288" width="90" height="8" rx="4"/>
+    <rect class="code" x="236" y="312" width="220" height="58" rx="6"/><rect class="codeline" x="248" y="324" width="120" height="6" rx="3"/><rect class="codeline" x="248" y="338" width="168" height="6" rx="3"/><rect class="codeline" x="248" y="352" width="96" height="6" rx="3"/>
+    <rect class="bar" x="236" y="386" width="220" height="8" rx="4"/><rect class="bar" x="236" y="400" width="190" height="8" rx="4"/><rect class="bar" x="236" y="414" width="205" height="8" rx="4"/>
+  </g>
+  <path class="fold" d="M206,116 h280"/>
+  <circle class="mark" cx="206" cy="116" r="4"/><path class="lead" d="M206,116 h-12"/>
+  <text class="wrong" x="188" y="121" font-size="15" text-anchor="end">Ten seconds end here</text>
+  <circle class="mark" cx="206" cy="153" r="4"/><path class="lead" d="M206,153 h-12"/>
+  <text class="wrong" x="188" y="158" font-size="15" text-anchor="end">Code before value</text>
+  <circle class="mark" cx="206" cy="251" r="4"/><path class="lead" d="M206,251 h-12"/>
+  <text class="wrong" x="188" y="256" font-size="15" text-anchor="end">A stale badge</text>
+  <circle class="mark" cx="206" cy="292" r="4"/><path class="lead" d="M206,292 h-12"/>
+  <text class="wrong" x="188" y="297" font-size="15" text-anchor="end">A dead link</text>
+  <text class="title" x="346" y="462" font-size="17" text-anchor="middle">Your README today</text>
+  <g class="glyph" transform="translate(571,176) scale(1.214)"><path d="M14,2 l2.5,7.5 L24,12 l-7.5,2.5 L14,22 l-2.5,-7.5 L4,12 l7.5,-2.5 z"/><path d="M24,20 l1,3 3,1 -3,1 -1,3 -1,-3 -3,-1 3,-1 z"/></g>
+  <path class="flow" d="M496,240 L 680,240" marker-end="url(#arrow)"/>
+  <text class="title" x="588" y="270" font-size="16" text-anchor="middle">your agent</text>
+  <text class="muted" x="588" y="290" font-size="14" text-anchor="middle">with readmerlin</text>
+  <rect class="sheet front" x="700" y="60" width="260" height="300" rx="10"/>
+  <circle class="dot" cx="792" cy="90" r="7"/><rect class="pill" x="806" y="84" width="76" height="12" rx="6"/>
+  <rect class="pill" x="740" y="112" width="180" height="9" rx="4.5"/>
+  <rect class="card" x="724" y="136" width="212" height="70" rx="8"/>
+  <rect class="bar" x="760" y="150" width="30" height="42" rx="4"/><path class="flow" d="M800,171 h56" marker-end="url(#arrow)"/><rect class="pill" x="868" y="156" width="30" height="30" rx="4"/>
+  <rect class="pill" x="734" y="222" width="42" height="10" rx="5"/><rect class="pill" x="784" y="222" width="42" height="10" rx="5"/><rect class="pill" x="834" y="222" width="42" height="10" rx="5"/><rect class="pill" x="884" y="222" width="42" height="10" rx="5"/>
+  <circle class="dot" cx="740" cy="256" r="4"/><rect class="bar" x="754" y="252" width="150" height="8" rx="4"/><circle class="dot" cx="740" cy="278" r="4"/><rect class="bar" x="754" y="274" width="170" height="8" rx="4"/><circle class="dot" cx="740" cy="300" r="4"/><rect class="bar" x="754" y="296" width="132" height="8" rx="4"/><circle class="dot" cx="740" cy="322" r="4"/><rect class="bar" x="754" y="318" width="160" height="8" rx="4"/>
+  <circle class="good" cx="970" cy="116" r="4"/><path class="goodlead" d="M970,116 h12"/>
+  <text class="title" x="988" y="121" font-size="15">What they get, first</text>
+  <circle class="good" cx="970" cy="171" r="4"/><path class="goodlead" d="M970,171 h12"/>
+  <text class="title" x="988" y="176" font-size="15">One picture</text>
+  <circle class="good" cx="970" cy="227" r="4"/><path class="goodlead" d="M970,227 h12"/>
+  <text class="title" x="988" y="232" font-size="15">Badges that are true</text>
+  <circle class="good" cx="970" cy="289" r="4"/><path class="goodlead" d="M970,289 h12"/>
+  <text class="title" x="988" y="294" font-size="15">Features at a glance</text>
+  <g class="glyph ok" transform="translate(738,382)"><circle cx="10" cy="10" r="8"/><path d="M6.5,10 l2.5,2.5 4.5,-5"/></g>
+  <text class="muted" x="766" y="397" font-size="15">checked on every push</text>
+  <text class="title" x="830" y="462" font-size="17" text-anchor="middle">The README people finish</text>
+</svg>

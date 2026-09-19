@@ -1,0 +1,24 @@
+{
+  "kind": "before-after",
+  "title": "A long README that opens on code, carries a stale badge and a dead link, and loses the reader at the fold becomes a short page that leads with what they get, shows one picture, and is checked on every push",
+  "before": {
+    "label": "Your README today",
+    "problems": [
+      { "label": "Ten seconds end here", "at": "fold" },
+      { "label": "Code before value", "at": "code" },
+      { "label": "A stale badge", "at": "badge" },
+      { "label": "A dead link", "at": "link" }
+    ]
+  },
+  "by": { "label": "your agent", "icon": "sparkles", "with": "with readmerlin" },
+  "after": {
+    "label": "The README people finish",
+    "parts": [
+      { "label": "What they get, first", "at": "tagline" },
+      { "label": "One picture", "at": "picture" },
+      { "label": "Badges that are true", "at": "badges" },
+      { "label": "Features at a glance", "at": "features" }
+    ],
+    "backing": "checked on every push"
+  }
+}

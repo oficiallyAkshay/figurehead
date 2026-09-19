@@ -1,0 +1,21 @@
+{
+  "name": "figurehead",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Draws the hero graphic at the top of a README from the reader's chair. An agent skill with a zero-dependency renderer.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "render": "node scripts/figurehead.mjs render",
+    "check": "node scripts/figurehead.mjs check",
+    "goldens": "node scripts/figurehead.mjs goldens"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oficiallyAkshay/figurehead.git"
+  }
+}
