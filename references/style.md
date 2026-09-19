@@ -14,11 +14,11 @@ Use `chart` when the product's own world is a harbour or the sea: a pier, an anc
 
 ## Earning a new style
 
-Most products are neither a compatibility case nor a harbour. A receipts tool is a trip, not a harbour: its world is a traveller's paper, not `chart`, and it should not default to `flat` either just because nothing else fits. A world like that is earned, not faked:
+Most products are neither a compatibility case nor a harbour. A receipts tool's own feeling is efficiency, structure and time back, not a harbour: its world is the throw itself, one clean loop on drafting paper, not `chart`, and it should not default to `flat` either just because nothing else fits. A world like that is earned, not faked:
 
-1. Propose the world in chat, in one sentence: for example, "a receipts tool is a trip, so a traveller's paper." Wait for the owner to accept it before drawing anything.
+1. Propose the world in chat, in one sentence, and wait for the owner to accept it before drawing anything. For the receipts tool, that sentence was: its feeling is efficiency, structure and time back, so its world is the throw itself, one clean loop on drafting paper. The owner accepted that world before anything was drawn.
 2. Make a hand-drawn reference for that world and get it accepted first, the same way `chart`'s reference (`examples/pierless/reference.svg`) was accepted before the renderer reproduced it.
-3. Only then does the renderer learn the style by name, with its own section in this file and its own golden in `examples/`.
+3. Only then does the renderer learn the style by name, with its own section in this file and its own golden in `examples/`. Proposing a world is not the same step as naming a style; only `chart` and `flat` exist in the renderer today, and the receipts tool's world has not yet earned a name of its own.
 
 A new world is never rendered by reusing `chart`'s harbour, or `flat`'s slate, with different labels on top. That is faking a style, not earning one.
 
