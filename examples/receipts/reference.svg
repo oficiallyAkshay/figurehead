@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480" role="img" aria-labelledby="hero-title">
-  <title id="hero-title">Boomerang reads your inbox, where rides, meals, flights, hotels, transit, Wi-Fi and more arrive as receipts, checks your calendar for the trip dates, and files one PDF: a summary page first, every receipt behind it, while you are still away</title>
+  <title id="hero-title">Receipts reads your inbox, where rides, meals, flights, hotels, transit, Wi-Fi and more arrive as receipts, checks your calendar for the trip dates, and files one PDF: a summary page first, every receipt behind it, while you are still away</title>
   <defs>
     <marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,1 L9,5 L1,9" class="accent-s" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
     <filter id="soft" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.10"/></filter>
@@ -36,7 +36,7 @@
 
   <rect class="bg" x="0" y="0" width="900" height="480"/>
 
-  <text class="sans ink" x="450" y="40" font-size="25" font-weight="700" text-anchor="middle"><tspan class="accent">Boomerang</tspan> reads your inbox, checks your calendar, files the claim.</text>
+  <text class="sans ink" x="450" y="40" font-size="25" font-weight="700" text-anchor="middle"><tspan class="accent">Receipts</tspan> reads your inbox, checks your calendar, files the claim.</text>
   <text class="sans muted" x="450" y="62" font-size="14" font-weight="500" text-anchor="middle">every receipt inside the trip dates, in order, while you're still away</text>
 
   <rect class="panel" x="40" y="90" width="280" height="318" rx="10" filter="url(#soft)"/>
@@ -87,7 +87,7 @@
   <path class="hand" d="M636,196 H698" marker-end="url(#head)"/>
   <circle class="accent" cx="666" cy="196" r="12"/>
   <path class="mark" d="M659,201 L666,189 L673,201 L666,197 Z"/>
-  <text class="sans accent" x="666" y="226" font-size="11" font-weight="700" text-anchor="middle">Boomerang</text>
+  <text class="sans accent" x="666" y="226" font-size="11" font-weight="700" text-anchor="middle">Receipts</text>
 
   <rect class="sheet-back" x="716" y="156" width="150" height="176" rx="3"/>
   <rect class="sheet-back" x="710" y="150" width="150" height="176" rx="3"/>

@@ -1,5 +1,6 @@
 {
   "kind": "before-after",
+  "style": "flat",
   "title": "A long README that opens on code, carries a stale badge and a dead link, and loses the reader at the fold becomes a short page that leads with what they get, shows one picture, and is checked on every push",
   "before": {
     "label": "Your README today",

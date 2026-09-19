@@ -11,6 +11,7 @@ import { dirname, resolve, join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { check, _internal } from "../scripts/check.mjs";
+import { render } from "../scripts/figurehead.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const readJson = (p) => JSON.parse(readFileSync(resolve(root, p), "utf8"));
@@ -33,16 +34,31 @@ const badSpecPath = join(badSpecDir, "bad.hero.json");
 writeFileSync(badSpecPath, JSON.stringify(badSpec, null, 2));
 after(() => rmSync(badSpecDir, { recursive: true, force: true }));
 
+// A spec with no "style" at all, to exercise the missing-style warn. Both
+// readmerlin's and tidy-inbox's real committed specs now set "style"
+// explicitly (so `check` no longer warns on them), so this fixture is built
+// inline instead of relying on a committed example lacking a style. It is
+// otherwise readmerlin's real, valid spec — before-after rendering ignores
+// "style" entirely, so readmerlin's real SVG still matches it byte for byte.
+const noStyleSpec = { ...readmerlinSpec };
+delete noStyleSpec.style;
+const noStyleDir = mkdtempSync(join(tmpdir(), "figurehead-nostyle-"));
+const noStyleSpecPath = join(noStyleDir, "no-style.hero.json");
+const noStyleSvgPath = join(noStyleDir, "no-style.svg");
+writeFileSync(noStyleSpecPath, JSON.stringify(noStyleSpec, null, 2));
+writeFileSync(noStyleSvgPath, render(noStyleSpec));
+after(() => rmSync(noStyleDir, { recursive: true, force: true }));
+
 // ---------------------------------------------------------------------------
 // spec/shape
 // ---------------------------------------------------------------------------
 
-test("spec/shape has no fails for readmerlin's real spec (only the missing-style warn)", () => {
+test("spec/shape has no fails for readmerlin's real spec", () => {
   assert.deepEqual(fails(_internal.checkSpecShape(readmerlinSpec)), []);
 });
 
-test('spec/shape warns exactly once, with id "spec/shape", when style is absent (readmerlin\'s real spec)', () => {
-  const findings = _internal.checkSpecShape(readmerlinSpec).filter((f) => f.level === "warn");
+test('spec/shape warns exactly once, with id "spec/shape", when style is absent (readmerlin\'s spec, minus its "style")', () => {
+  const findings = _internal.checkSpecShape(noStyleSpec).filter((f) => f.level === "warn");
   assert.equal(findings.length, 1);
   assert.equal(findings[0].id, "spec/shape");
   assert.match(findings[0].message, /No style chosen/);
@@ -165,9 +181,7 @@ test("spec/shape fails a chart spec with no \"hub\"", () => {
 
 test("spec/shape does not apply the chart-only rules to a flat spec (unchanged)", () => {
   // A flat spec using "sources" and "deliverable" with no "hub" is exactly
-  // tidy-inbox's own real, valid shape — style stays absent (flat), which
-  // now also earns the missing-style warn, so only the fails are asserted
-  // empty here.
+  // tidy-inbox's own real, valid shape.
   assert.deepEqual(fails(_internal.checkSpecShape(tidyInboxSpec)), []);
 });
 
@@ -611,16 +625,18 @@ test("xml/valid fails on an unbalanced tag", () => {
 // check() end to end, and the CLI
 // ---------------------------------------------------------------------------
 
-test("check() has no fail findings for the readmerlin golden pair (only the missing-style warn)", async () => {
+test("check() has no findings at all for the readmerlin golden pair", async () => {
   const findings = await check(readmerlinSpec, readmerlinSvg);
-  assert.deepEqual(fails(findings), []);
-  assert.equal(findings.length, 1);
-  assert.equal(findings[0].id, "spec/shape");
-  assert.equal(findings[0].level, "warn");
+  assert.deepEqual(findings, []);
 });
 
-test("check() has no fail findings for the tidy-inbox golden pair (kind absent, defaults to fan; only the missing-style warn)", async () => {
+test("check() has no findings at all for the tidy-inbox golden pair (kind absent, defaults to fan)", async () => {
   const findings = await check(tidyInboxSpec, tidyInboxSvg);
+  assert.deepEqual(findings, []);
+});
+
+test("check() warns exactly once, with id \"spec/shape\", on readmerlin's spec minus its \"style\"", async () => {
+  const findings = await check(noStyleSpec, readmerlinSvg);
   assert.deepEqual(fails(findings), []);
   assert.equal(findings.length, 1);
   assert.equal(findings[0].id, "spec/shape");
@@ -628,7 +644,12 @@ test("check() has no fail findings for the tidy-inbox golden pair (kind absent, 
 });
 
 test("CLI exits 0 for a passing pair even though it prints a warn (a warn never changes the exit code)", () => {
-  const res = spawnSync("node", ["scripts/check.mjs", "examples/readmerlin/readmerlin.hero.json", "examples/readmerlin/readmerlin.svg"], { cwd: root, encoding: "utf8" });
+  // readmerlin's and tidy-inbox's real, committed specs both set "style" now, so
+  // the missing-style warn is exercised here against an inline fixture (readmerlin's
+  // spec minus its "style", paired with its own real SVG, which before-after
+  // rendering produces identically whether or not "style" is set) rather than a
+  // committed example.
+  const res = spawnSync("node", ["scripts/check.mjs", noStyleSpecPath, noStyleSvgPath], { cwd: root, encoding: "utf8" });
   assert.equal(res.status, 0);
   const lines = res.stdout.trim().split("\n").filter(Boolean);
   assert.equal(lines.length, 1);
