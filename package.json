@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test",
     "render": "node scripts/figurehead.mjs render",
     "check": "node scripts/figurehead.mjs check",
     "goldens": "node scripts/figurehead.mjs goldens"
