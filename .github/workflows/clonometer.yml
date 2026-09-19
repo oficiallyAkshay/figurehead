@@ -16,3 +16,4 @@ jobs:
       - uses: oficiallyAkshay/clonometer@2c82a8779a68d2babb1e5e856d2ae69253dcd611 # pinned commit
         with:
           token: ${{ secrets.TRAFFIC_TOKEN }}
+          metrics: clones,views
