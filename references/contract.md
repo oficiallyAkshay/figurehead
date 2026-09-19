@@ -34,7 +34,7 @@ One JSON file beside the SVG, named `<name>.hero.json`. `readmerlin check` alrea
 
 ```
 kind        "fan" | "before-after"            default "fan" when absent
-style       "chart" | "flat"                  chosen for every hero; the skill picks a world and never leaves it absent. "flat" exists so readmerlin's goldens do not move; the renderer still treats an absent style as flat, and check warns on it
+style       "chart" | "window" | "flat"       chosen for every hero; the skill picks a world and never leaves it absent. "flat" exists so readmerlin's goldens do not move; the renderer still treats an absent style as flat, and check warns on it
 title       string                            required; becomes the SVG title and alt text
 headline    string                            optional; chart draws it as the editorial line, brand word in brand colour
 subhead     string                            optional; chart draws it under the headline
@@ -58,9 +58,9 @@ scene       object                            documentation only in v1; the rend
 
 Unknown fields are an error. Unknown icon names are an error naming the known list. Anything else the brief's wording rules say about labels is a check, not a render error.
 
-## The two styles
+## The styles
 
-`references/style.md` describes both and holds the palette. What the contract fixes: **flat** is exactly what the seed renders, and its output for the two readmerlin goldens must not change by a byte; **chart** reproduces `examples/pierless/reference.svg`, and `source.note` and `aside` are drawn by chart only.
+`references/style.md` describes them and holds the palettes. What the contract fixes: **flat** is exactly what the seed renders, and its output for the two readmerlin goldens must not change by a byte; **chart** reproduces `examples/pierless/reference.svg`, takes one `source` and a `hub`, refuses `sources` and `deliverable`, and is the only style that draws `source.note` and `aside`; **window** reproduces `examples/receipts/reference.svg`, an automation between two app surfaces, takes exactly two `sources` (an inbox, then a calendar), a `hub` and a `deliverable`, and refuses `source`, `aside` and item `theme`.
 
 ## Goldens
 
@@ -71,6 +71,7 @@ Unknown fields are an error. Unknown icon names are an error naming the known li
 | `readmerlin` | from readmerlin, unchanged | byte golden from day one; the seed already reproduces it |
 | `tidy-inbox` | from readmerlin, unchanged | byte golden from day one; the receipts hero, two sources fanning to one document |
 | `pierless` | the spec pierless already has | the renderer's own output in `chart` style, committed once the owner accepts it in chat; `reference.svg` is hand-made and never a byte golden |
+| `receipts` | the tidy-inbox spec with `window`, a headline and a subhead | the renderer's own output in `window` style; `reference.svg` is hand-made, accepted by the owner, never a byte golden |
 
 The conductor looks at every golden rendered, at full width, in light and dark, before it merges.
 
