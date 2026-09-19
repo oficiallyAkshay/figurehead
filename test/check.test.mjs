@@ -37,8 +37,21 @@ after(() => rmSync(badSpecDir, { recursive: true, force: true }));
 // spec/shape
 // ---------------------------------------------------------------------------
 
-test("spec/shape passes for readmerlin's real spec", () => {
-  assert.deepEqual(_internal.checkSpecShape(readmerlinSpec), []);
+test("spec/shape has no fails for readmerlin's real spec (only the missing-style warn)", () => {
+  assert.deepEqual(fails(_internal.checkSpecShape(readmerlinSpec)), []);
+});
+
+test('spec/shape warns exactly once, with id "spec/shape", when style is absent (readmerlin\'s real spec)', () => {
+  const findings = _internal.checkSpecShape(readmerlinSpec).filter((f) => f.level === "warn");
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].id, "spec/shape");
+  assert.match(findings[0].message, /No style chosen/);
+});
+
+test("spec/shape produces no warn for the pierless golden (a style is already chosen)", () => {
+  const pierlessSpec = readJson("examples/pierless/pierless.hero.json");
+  const findings = _internal.checkSpecShape(pierlessSpec).filter((f) => f.level === "warn");
+  assert.deepEqual(findings, []);
 });
 
 test("spec/shape fails a copy of readmerlin's spec with an invalid style and an unknown field", () => {
@@ -152,8 +165,10 @@ test("spec/shape fails a chart spec with no \"hub\"", () => {
 
 test("spec/shape does not apply the chart-only rules to a flat spec (unchanged)", () => {
   // A flat spec using "sources" and "deliverable" with no "hub" is exactly
-  // tidy-inbox's own real, valid shape — style stays absent (flat).
-  assert.deepEqual(_internal.checkSpecShape(tidyInboxSpec), []);
+  // tidy-inbox's own real, valid shape — style stays absent (flat), which
+  // now also earns the missing-style warn, so only the fails are asserted
+  // empty here.
+  assert.deepEqual(fails(_internal.checkSpecShape(tidyInboxSpec)), []);
 });
 
 // ---------------------------------------------------------------------------
@@ -459,20 +474,28 @@ test("xml/valid fails on an unbalanced tag", () => {
 // check() end to end, and the CLI
 // ---------------------------------------------------------------------------
 
-test("check() returns no findings for the readmerlin golden pair", async () => {
+test("check() has no fail findings for the readmerlin golden pair (only the missing-style warn)", async () => {
   const findings = await check(readmerlinSpec, readmerlinSvg);
-  assert.deepEqual(findings, []);
+  assert.deepEqual(fails(findings), []);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].id, "spec/shape");
+  assert.equal(findings[0].level, "warn");
 });
 
-test("check() returns no findings for the tidy-inbox golden pair (kind absent, defaults to fan)", async () => {
+test("check() has no fail findings for the tidy-inbox golden pair (kind absent, defaults to fan; only the missing-style warn)", async () => {
   const findings = await check(tidyInboxSpec, tidyInboxSvg);
-  assert.deepEqual(findings, []);
+  assert.deepEqual(fails(findings), []);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].id, "spec/shape");
+  assert.equal(findings[0].level, "warn");
 });
 
-test("CLI exits 0 and prints nothing for a passing pair", () => {
+test("CLI exits 0 for a passing pair even though it prints a warn (a warn never changes the exit code)", () => {
   const res = spawnSync("node", ["scripts/check.mjs", "examples/readmerlin/readmerlin.hero.json", "examples/readmerlin/readmerlin.svg"], { cwd: root, encoding: "utf8" });
   assert.equal(res.status, 0);
-  assert.equal(res.stdout.trim(), "");
+  const lines = res.stdout.trim().split("\n").filter(Boolean);
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /^spec\/shape\twarn\tNo style chosen/);
 });
 
 test("CLI exits 1 and prints tab-separated findings for a failing pair", () => {
