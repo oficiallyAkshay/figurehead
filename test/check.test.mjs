@@ -348,27 +348,24 @@ test("text/fits fails when a chart subhead is too long for its 740px room", () =
   assert.match(findings[0].message, /does not fit the 740px room/);
 });
 
-test("text/fits passes for a short window headline and short inbox row labels", () => {
+test("text/fits passes for a short window headline and a short inbox row label", () => {
   const widths = _internal.loadWidths();
   const spec = {
     kind: "fan",
     style: "window",
     headline: "One packet",
-    handled: [
-      { label: "Triaged", icon: "mail" },
-      { label: "Scheduled", icon: "calendar" },
-    ],
+    handled: [{ label: "Triaged", icon: "mail" }],
   };
   assert.deepEqual(fails(_internal.checkTextFits(spec, widths)), []);
 });
 
-test("text/fits fails when a window headline is too long for its 820px room (approximated from sans-600-19 scaled by 25/19)", () => {
+test("text/fits fails when a window headline is too long for its 820px room (measured at sans-700-25)", () => {
   const widths = _internal.loadWidths();
   const spec = {
     kind: "fan",
     style: "window",
     headline:
-      "This window headline is written deliberately long so that, once its sans-600-19 advance is measured and scaled up by twenty five over nineteen to approximate the real twenty five pixel size, it will not fit the eight hundred twenty pixel room the window canvas gives it, not even close to fitting",
+      "This window headline is written deliberately long so that, once measured at its real twenty five pixel bold system-ui face, it will not fit the eight hundred twenty pixel room the window canvas gives it, not even close to fitting inside that room at all",
   };
   const findings = fails(_internal.checkTextFits(spec, widths));
   assert.equal(findings.length, 1);
@@ -376,16 +373,17 @@ test("text/fits fails when a window headline is too long for its 820px room (app
   assert.match(findings[0].message, /does not fit the 820px room/);
 });
 
-test('text/fits warns, but does not fail, a window inbox row label since "sans-600-14" is not a measured face', () => {
+test('text/fits fails a window inbox row label of twenty characters, too long for its 60px room (measured at sans-600-14)', () => {
   const widths = _internal.loadWidths();
   const spec = {
     kind: "fan",
     style: "window",
-    handled: [{ label: "Triaged", icon: "mail" }],
+    handled: [{ label: "Exactly twenty chars", icon: "mail" }],
   };
-  const findings = _internal.checkTextFits(spec, widths);
-  assert.deepEqual(fails(findings), []);
-  assert.ok(findings.some((f) => f.level === "warn" && /No measured face "sans-600-14"/.test(f.message)));
+  const findings = fails(_internal.checkTextFits(spec, widths));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /a window inbox row label/);
+  assert.match(findings[0].message, /does not fit the 60px room/);
 });
 
 test("text/fits fails when a before-after label is too long for its 180px room", () => {

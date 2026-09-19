@@ -378,32 +378,9 @@ function checkTextFits(spec, widths) {
   }
 
   if (style === "window") {
-    // The window headline is drawn at 25px, system-ui, weight 700 — a size
-    // scripts/widths.json has never measured (its sans stack tops out at
-    // "sans-600-19"). Rather than invent an unmeasured "sans-600-25" key,
-    // the closest measured face in the same family and weight is used and
-    // its summed advance scaled by 25/19: a font's per-character advance
-    // scales ~linearly with its point size, so this approximates the 25px
-    // width closely enough to compare against the window canvas's 820px
-    // room without needing a new browser measurement.
-    if (typeof spec.headline === "string" && spec.headline.trim()) {
-      const base = measureLabel(faces, "sans-600-19", spec.headline);
-      if (base === null) {
-        findings.push(F("warn", 'No measured face "sans-600-19" for the window headline; text/fits was skipped for it.', 'Add "sans-600-19" to scripts/widths.json.'));
-      } else {
-        const width = base * (25 / 19);
-        const withMargin = width * 1.1;
-        if (withMargin > 820) {
-          findings.push(
-            F(
-              "fail",
-              `the window headline "${spec.headline}" measures ${width.toFixed(1)}px (${withMargin.toFixed(1)}px with its ten percent margin), which does not fit the 820px room its card gives it.`,
-              "Shorten the headline, or make the card wider."
-            )
-          );
-        }
-      }
-    }
+    // The window headline is drawn at 25px, system-ui, weight 700, against
+    // the 820px canvas room.
+    check1(spec.headline, "sans-700-25", 820, "the window headline");
   }
 
   if (spec.kind === "before-after") {
