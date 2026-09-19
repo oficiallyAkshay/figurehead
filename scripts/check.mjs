@@ -126,6 +126,24 @@ function checkSpecShape(spec) {
     }
   };
 
+  // Two before.problems items, or two after.parts items, that share the same
+  // "at" would draw one on top of the other (both are positioned by "at" on
+  // the before/after sheet), so it's a fail naming the shared value.
+  const checkSharedAt = (items, where) => {
+    if (!Array.isArray(items)) return;
+    const byAt = new Map();
+    items.forEach((item, i) => {
+      if (!isPlainObject(item) || item.at === undefined) return;
+      if (!byAt.has(item.at)) byAt.set(item.at, []);
+      byAt.get(item.at).push(item.label ?? `${where}[${i}]`);
+    });
+    for (const [at, itemLabels] of byAt) {
+      if (itemLabels.length > 1) {
+        fail(`Two "${where}" items share the same "at" value "${at}": ${itemLabels.join(", ")}.`, `Give each "${where}" item its own "at".`);
+      }
+    }
+  };
+
   if (spec.kind === "before-after") {
     if (spec.before === undefined) {
       fail('A before-after spec needs "before".', 'Add a "before" object with "label" and "problems".');
@@ -136,6 +154,7 @@ function checkSpecShape(spec) {
           fail('"before.problems" must be a non-empty array.', 'Give "before.problems" at least one item.');
         } else {
           spec.before.problems.forEach((p, i) => checkItem(p, `"before.problems[${i}]"`, ["label", "at"], ["label", "at"]));
+          checkSharedAt(spec.before.problems, "before.problems");
         }
       }
     }
@@ -153,6 +172,7 @@ function checkSpecShape(spec) {
           fail('"after.parts" must be a non-empty array.', 'Give "after.parts" at least one item.');
         } else {
           spec.after.parts.forEach((p, i) => checkItem(p, `"after.parts[${i}]"`, ["label", "at"], ["label", "at"]));
+          checkSharedAt(spec.after.parts, "after.parts");
         }
       }
     }
@@ -206,50 +226,20 @@ function checkSpecShape(spec) {
 // icons/known, icons/distinct
 // ---------------------------------------------------------------------------
 
-function extractIconNames(mod) {
-  if (!mod) return null;
-  if (mod.ICONS && typeof mod.ICONS === "object") return Object.keys(mod.ICONS);
-  if (Array.isArray(mod.ICON_NAMES)) return mod.ICON_NAMES;
-  if (Array.isArray(mod.default)) return mod.default;
-  if (mod.default && typeof mod.default === "object") return Object.keys(mod.default);
-  return null;
-}
-
-/**
- * Loads the known icon-name list lazily, so a missing scripts/icons.mjs is a
- * clear thrown error rather than a crash at module load:
- *   1. scripts/icons.mjs, once the renderer builder adds it (one entry per name).
- *   2. an exported ICONS table in scripts/figurehead.mjs.
- *   3. a bridge: figurehead.mjs is the renderer seed and, as of this writing,
- *      keeps its ICONS table as an unexported const. Its source text is parsed
- *      for `const ICONS = { ... }` so this check still works meanwhile. Once
- *      either scripts/icons.mjs exists or ICONS is exported, step 1 or 2 wins
- *      and this parsing step is never reached.
- */
+/** Loads the known icon-name list from scripts/icons.mjs, the renderer builder's
+ * permanently-owned single source of truth (one entry per name). A missing or
+ * broken import is a clear thrown error rather than a crash at module load. */
 async function loadIconNames() {
+  let mod;
   try {
-    const mod = await import(new URL("./icons.mjs", import.meta.url));
-    const names = extractIconNames(mod);
-    if (names) return names;
+    mod = await import(new URL("./icons.mjs", import.meta.url));
   } catch (err) {
-    if (err?.code !== "ERR_MODULE_NOT_FOUND") {
-      throw new Error(`scripts/icons.mjs exists but could not be loaded: ${err.message}`);
-    }
+    throw new Error(`Could not load scripts/icons.mjs: ${err.message}`);
   }
-
-  const fhUrl = new URL("./figurehead.mjs", import.meta.url);
-  const mod = await import(fhUrl);
-  const exported = extractIconNames(mod);
-  if (exported) return exported;
-
-  const src = readFileSync(fileURLToPath(fhUrl), "utf8");
-  const m = src.match(/const ICONS\s*=\s*\{([\s\S]*?)\n\};/);
-  if (m) {
-    const parsed = [...m[1].matchAll(/^\s*(?:"([^"]+)"|'([^']+)'|([A-Za-z_$][\w$-]*))\s*:/gm)].map((mm) => mm[1] ?? mm[2] ?? mm[3]).filter(Boolean);
-    if (parsed.length) return parsed;
+  if (!mod.ICONS || typeof mod.ICONS !== "object") {
+    throw new Error("scripts/icons.mjs does not export an ICONS object.");
   }
-
-  throw new Error("Could not find a table of known icon names: scripts/icons.mjs does not exist, and scripts/figurehead.mjs exports no ICONS table.");
+  return Object.keys(mod.ICONS);
 }
 
 function collectIconUses(spec) {
@@ -320,6 +310,14 @@ function checkTextFits(spec, widths) {
     }
   };
 
+  if (style === "chart") {
+    // The chart canvas is a fixed 820x500 (CHART_W/CHART_H in
+    // scripts/figurehead.mjs); the headline and subhead are centred editorial
+    // lines with a 40px margin on each side, so their room is 820 - 40 - 40.
+    check1(spec.headline, "serif-700-27", 740, "the chart headline");
+    check1(spec.subhead, "serif-italic-16", 740, "the chart subhead");
+  }
+
   if (spec.kind === "before-after") {
     for (const p of spec.before?.problems ?? []) check1(p?.label, "sans-600-15", 180, "a before.problems label");
     for (const p of spec.after?.parts ?? []) check1(p?.label, "sans-600-15", 180, "an after.parts label");
@@ -345,19 +343,12 @@ function checkSpecAgrees(spec, svg) {
   const F = mkF("spec/agrees");
   const findings = [];
 
+  // labels(spec), from figurehead.mjs, already walks the whole spec and
+  // returns every string under a labelled key (title, label, gives, heading,
+  // backing, with, sub, note, headline, subhead, aside — see its own "keys"
+  // list), so no field needs collecting here by hand.
   const expected = new Set();
   for (const s of labels(spec)) if (typeof s === "string" && s.trim()) expected.add(s.trim());
-  if (typeof spec.headline === "string" && spec.headline.trim()) expected.add(spec.headline.trim());
-  if (typeof spec.subhead === "string" && spec.subhead.trim()) expected.add(spec.subhead.trim());
-  if (typeof spec.aside === "string" && spec.aside.trim()) expected.add(spec.aside.trim());
-  const walkSub = (v) => {
-    if (Array.isArray(v)) v.forEach(walkSub);
-    else if (isPlainObject(v)) {
-      if (typeof v.sub === "string" && v.sub.trim()) expected.add(v.sub.trim());
-      for (const val of Object.values(v)) walkSub(val);
-    }
-  };
-  walkSub(spec);
 
   // The renderer is free to split one label across more than one text node
   // (pierless draws its two-line aside as two <text> elements, exactly like
@@ -499,15 +490,18 @@ function checkCurvesNoHook(svg) {
 //     translate() read from their own `transform` attribute and from every
 //     enclosing `<g transform="translate(...)">`, tracked with a small stack
 //     while the markup is scanned tag by tag in document order.
-//   - <text>: only when its class resolves (via the <style> block's `.class {
-//     ... }` rules) to a font-family/weight/style that, combined with the
-//     element's own font-size attribute, names a face measured in
-//     scripts/widths.json exactly (e.g. class="title" font-size="17" on the
-//     sans stack at weight 600 -> "sans-600-17"). Its width then comes from
-//     the same advances text/fits uses; text-anchor (start/middle/end) sets
-//     which side of x the box extends from. A vertical extent is guessed as
-//     [y - fontSize, y + 0.3 * fontSize] (ascent/descent), since no measured
-//     line-height exists.
+//   - <text>: its own font-weight/font-style attribute wins when present
+//     (the chart headline's inline font-weight="700", a subhead's inline
+//     font-style="italic"); otherwise weight/style fall back to the <style>
+//     block's `.class { ... }` rules. Combined with the element's own
+//     font-size attribute and the family the class rules name, this must
+//     name a face measured in scripts/widths.json exactly (e.g. class="title"
+//     font-size="17" on the sans stack at weight 600 -> "sans-600-17"; class
+//     "serif ink" font-weight="700" font-size="27" -> "serif-700-27"). Its
+//     width then comes from the same advances text/fits uses; text-anchor
+//     (start/middle/end) sets which side of x the box extends from. A
+//     vertical extent is guessed as [y - fontSize, y + 0.3 * fontSize]
+//     (ascent/descent), since no measured line-height exists.
 // Not covered:
 //   - rotate() or scale() on any transform — ignored, per the brief, not composed.
 //   - any <path> geometry (arrows, waves, rope, curves, ship, letters) — that
@@ -547,15 +541,28 @@ function parseStyleRules(svg) {
   return rules;
 }
 
-function faceKeyFor(classAttr, fontSize, rules) {
+function faceKeyFor(classAttr, fontSize, rules, ownAttrs = {}) {
   if (!fontSize) return null;
   const classes = (classAttr ?? "").trim().split(/\s+/).filter(Boolean);
   let body = "";
   for (const c of classes) if (rules[c]) body += rules[c] + ";";
   if (!body) return null;
-  const italic = /font-style\s*:\s*italic/.test(body);
-  const weightM = /font-weight\s*:\s*(\d+)/.exec(body);
-  const weight = weightM ? weightM[1] : "400";
+  // An element's own font-weight/font-style attribute (the chart headline's
+  // inline font-weight="700", the hub label's inline font-weight="700", a
+  // subhead's inline font-style="italic") wins over the CSS class rules,
+  // which for the chart style only ever set font-family and fill: .serif {
+  // font-family: Georgia... } carries no weight or style of its own. Reading
+  // the class rules only, as before, made every such element resolve to a
+  // face key like "serif-400-27" that scripts/widths.json never measured, so
+  // it was silently skipped instead of checked.
+  const italic = ownAttrs["font-style"] !== undefined ? ownAttrs["font-style"] === "italic" : /font-style\s*:\s*italic/.test(body);
+  let weight;
+  if (ownAttrs["font-weight"] !== undefined) {
+    weight = ownAttrs["font-weight"];
+  } else {
+    const weightM = /font-weight\s*:\s*(\d+)/.exec(body);
+    weight = weightM ? weightM[1] : "400";
+  }
   let family = "sans";
   if (/Georgia/.test(body)) family = "serif";
   else if (/Bradley Hand|cursive/.test(body)) family = "hand";
@@ -626,7 +633,7 @@ function checkGeometryInside(svg, widths) {
       const a = attrsOf(textAttrsStr);
       const own = parseTranslate(a.transform);
       const fontSize = a["font-size"] ? Number(a["font-size"]) : null;
-      const faceKey = faceKeyFor(a.class, fontSize, rules);
+      const faceKey = faceKeyFor(a.class, fontSize, rules, a);
       if (faceKey && faces[faceKey]) {
         const text = collapseWs(unescapeXml(textInner.replace(/<[^>]*>/g, "")));
         const width = measureLabel(faces, faceKey, text);
@@ -786,7 +793,7 @@ export async function check(spec, svg, options = {}) {
   try {
     iconNames = await loadIconNames();
   } catch (err) {
-    findings.push({ id: "icons/known", level: "fail", message: err.message, repair: "Add scripts/icons.mjs, or export ICONS from scripts/figurehead.mjs." });
+    findings.push({ id: "icons/known", level: "fail", message: err.message, repair: "Add scripts/icons.mjs exporting an ICONS object." });
   }
   if (iconNames) findings.push(...checkIconsKnown(spec, iconNames));
   findings.push(...checkIconsDistinct(spec));

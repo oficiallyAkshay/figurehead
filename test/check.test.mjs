@@ -79,6 +79,42 @@ test("spec/shape fails handled outside three to nine items and a bad theme", () 
   assert.ok(findings.some((f) => /theme.*beige/.test(f.message)));
 });
 
+test("spec/shape fails when two before.problems items share the same \"at\"", () => {
+  const spec = {
+    kind: "before-after",
+    title: "t",
+    before: {
+      label: "before",
+      problems: [
+        { label: "A problem", at: "fold" },
+        { label: "Another problem", at: "fold" },
+      ],
+    },
+    by: { label: "by", icon: "mail" },
+    after: { label: "after", parts: [{ label: "A part", at: "top" }] },
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => f.message.includes('"before.problems"') && f.message.includes('"fold"')));
+});
+
+test("spec/shape fails when two after.parts items share the same \"at\"", () => {
+  const spec = {
+    kind: "before-after",
+    title: "t",
+    before: { label: "before", problems: [{ label: "A problem", at: "fold" }] },
+    by: { label: "by", icon: "mail" },
+    after: {
+      label: "after",
+      parts: [
+        { label: "A part", at: "top" },
+        { label: "Another part", at: "top" },
+      ],
+    },
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => f.message.includes('"after.parts"') && f.message.includes('"top"')));
+});
+
 // ---------------------------------------------------------------------------
 // icons/known
 // ---------------------------------------------------------------------------
@@ -146,6 +182,38 @@ test("text/fits fails when a chart-style handled sub is too long for its 220px r
   const findings = fails(_internal.checkTextFits(spec, widths));
   assert.equal(findings.length, 1);
   assert.match(findings[0].message, /does not fit the 220px room/);
+});
+
+test("text/fits passes the pierless golden's chart headline and subhead", () => {
+  const pierlessSpec = readJson("examples/pierless/pierless.hero.json");
+  const widths = _internal.loadWidths();
+  assert.deepEqual(_internal.checkTextFits(pierlessSpec, widths), []);
+});
+
+test("text/fits fails when a chart headline is too long for its 740px room", () => {
+  const widths = _internal.loadWidths();
+  const spec = {
+    kind: "fan",
+    style: "chart",
+    headline: "This editorial headline is written deliberately long so that, once measured in the chart's bold serif face at size twenty seven, it will not fit the seven hundred forty pixel room the chart canvas gives it",
+  };
+  const findings = fails(_internal.checkTextFits(spec, widths));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /the chart headline/);
+  assert.match(findings[0].message, /does not fit the 740px room/);
+});
+
+test("text/fits fails when a chart subhead is too long for its 740px room", () => {
+  const widths = _internal.loadWidths();
+  const spec = {
+    kind: "fan",
+    style: "chart",
+    subhead: "This italic subhead is also written deliberately long so that, once measured in the chart's italic serif face at size sixteen, it too will not fit the seven hundred forty pixel room the chart canvas gives it",
+  };
+  const findings = fails(_internal.checkTextFits(spec, widths));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /the chart subhead/);
+  assert.match(findings[0].message, /does not fit the 740px room/);
 });
 
 test("text/fits fails when a before-after label is too long for its 180px room", () => {
@@ -293,6 +361,28 @@ test("geometry/inside passes for readmerlin's real svg", () => {
 
 test("geometry/inside fails when a rect leaves the viewBox", () => {
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="t1"><title id="t1">x</title><rect x="90" y="90" width="50" height="50"/></svg>';
+  const findings = fails(_internal.checkGeometryInside(svg, _internal.loadWidths()));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /leaves the viewBox/);
+});
+
+test("geometry/inside passes for pierless's real chart-style svg (headline, subhead and hub label resolve their face from their own inline attributes)", () => {
+  const pierlessSvg = readText("examples/pierless/pierless.svg");
+  const widths = _internal.loadWidths();
+  assert.deepEqual(_internal.checkGeometryInside(pierlessSvg, widths), []);
+});
+
+test("geometry/inside reads an element's own font-weight over the class rule, and fails a too-wide headline the class-only reading used to silently skip", () => {
+  // The class only sets font-family and fill, exactly like the chart style's
+  // real .serif/.ink rules; the bold weight comes solely from the element's
+  // own font-weight="700", matching the chart headline's own markup.
+  const svg = [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" role="img" aria-labelledby="t1">',
+    '<title id="t1">x</title>',
+    "<style>.serif { font-family: Georgia, serif; } .ink { fill: #1f2d45; }</style>",
+    '<text class="serif ink" x="10" y="50" font-size="27" font-weight="700">A headline far too wide for this tiny two hundred pixel canvas</text>',
+    "</svg>",
+  ].join("\n");
   const findings = fails(_internal.checkGeometryInside(svg, _internal.loadWidths()));
   assert.equal(findings.length, 1);
   assert.match(findings[0].message, /leaves the viewBox/);
