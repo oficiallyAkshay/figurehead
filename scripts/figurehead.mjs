@@ -18,17 +18,22 @@ import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { esc } from "./components/esc.mjs";
-import { glyph, themedGlyph, rawGlyph } from "./components/glyphs.mjs";
+import { glyph } from "./components/glyphs.mjs";
 import { svgHead } from "./components/svg-shell.mjs";
 import { okBadge } from "./components/badges.mjs";
-import { flowCurve, ropeLink, grommet } from "./components/curves.mjs";
-import { stackedSheet } from "./components/sheets.mjs";
-import { flatCard, chartHandledCard } from "./components/cards.mjs";
+import { flowCurve, ropeLink } from "./components/curves.mjs";
+import { flatCard, chartHandledCard, chartMoreCard } from "./components/cards.mjs";
 import { chartHub, windowHandoffHub } from "./components/hub-disc.mjs";
 import { chartHeadlineBlock, windowHeadlineBlock } from "./components/headline.mjs";
 import { panelWithChrome } from "./components/panel.mjs";
 import { listRow } from "./components/list-rows.mjs";
 import { calendarGrid } from "./components/calendar.mjs";
+import { flatSourceCard, chartSourceCard } from "./components/source-cards.mjs";
+import { deliverablePage } from "./components/deliverable-page.mjs";
+import { windowDeliverablePacket } from "./components/window-deliverable.mjs";
+import { feedCurves } from "./components/feed-curves.mjs";
+import { rhumbLines, soundingLabels, nightSky, compassRose, gulls, seaBands, sailboat, asideLine } from "./components/chart-scene.mjs";
+import { beforePage, foldLine, problemMarks, afterPage, partMarks } from "./components/before-after.mjs";
 
 const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 const SERIF = 'Georgia, "Iowan Old Style", Palatino, "Palatino Linotype", "Times New Roman", serif';
@@ -103,43 +108,6 @@ function assertFits(text, max, where) {
 // readmerlin and tidy-inbox goldens must not change by a byte.
 // ---------------------------------------------------------------------------
 
-// The page the reader wanted. "document" is a README-like page, "table" is a summary with a total.
-function page(kind, x, y, heading) {
-  const out = [];
-  out.push(
-    ...stackedSheet({
-      x,
-      y,
-      w: 212,
-      h: 274,
-      rx: 10,
-      back2: { dx: 28, dy: 28, cls: "sheet back2" },
-      back1: { dx: 14, dy: 14, cls: "sheet back1" },
-      frontClass: "sheet front",
-    })
-  );
-  if (kind === "table") {
-    out.push(`<text class="title" x="${x + 22}" y="${y + 42}" font-size="20">${esc(heading)}</text>`);
-    [96, 72, 110, 84, 100].forEach((w, i) => {
-      const ry = y + 66 + i * 30;
-      out.push(`<rect class="bar" x="${x + 22}" y="${ry}" width="${w}" height="8" rx="4"/><rect class="bar" x="${x + 150}" y="${ry}" width="${i % 2 ? 32 : 40}" height="8" rx="4"/>`);
-    });
-    out.push(`<path class="rule" d="M${x + 22},${y + 214} h168"/>`);
-    out.push(`<rect class="pill" x="${x + 22}" y="${y + 230}" width="64" height="10" rx="5"/><rect class="pill" x="${x + 142}" y="${y + 230}" width="48" height="10" rx="5"/>`);
-    return out;
-  }
-  out.push(`<text class="title" x="${x + 106}" y="${y + 40}" font-size="20" text-anchor="middle">${esc(heading)}</text>`);
-  out.push(`<rect class="bar" x="${x + 56}" y="${y + 56}" width="100" height="8" rx="4"/>`);
-  for (const dx of [34, 84, 134]) out.push(`<rect class="pill" x="${x + dx}" y="${y + 78}" width="38" height="10" rx="5"/>`);
-  out.push(`<rect class="card" x="${x + 22}" y="${y + 104}" width="168" height="62" rx="8"/>`);
-  out.push(flowCurve({ x1: x + 40, y1: y + 135, c1x: x + 70, c1y: y + 135, c2x: x + 90, c2y: y + 118, x2: x + 110, y2: y + 118, marker: true }));
-  out.push(flowCurve({ x1: x + 40, y1: y + 135, c1x: x + 70, c1y: y + 135, c2x: x + 90, c2y: y + 152, x2: x + 110, y2: y + 152, marker: true }));
-  out.push(`<circle class="dot" cx="${x + 38}" cy="${y + 135}" r="4"/>`);
-  [120, 96, 132, 84].forEach((w, i) => out.push(`<rect class="bar" x="${x + 22}" y="${y + 186 + i * 20}" width="${w}" height="8" rx="4"/>`));
-  out.push(okBadge(x + 150, y + 232, 1.2));
-  return out;
-}
-
 function head(o, spec, height) {
   o.push(
     ...svgHead({
@@ -197,32 +165,19 @@ function renderBeforeAfter(spec) {
   const o = [];
   const H = 490;
   head(o, spec, H);
-  const bars = (x, y, widths, cls = "bar", h = 8, step = 14) => widths.map((w, i) => `<rect class="${cls}" x="${x}" y="${y + i * step}" width="${w}" height="${h}" rx="${h / 2}"/>`).join("");
-  const codeBlock = (x, y) => `<rect class="code" x="${x}" y="${y}" width="220" height="58" rx="6"/>${bars(x + 12, y + 12, [120, 168, 96], "codeline", 6, 14)}`;
 
   // Before: a long page that fades out, because nobody reaches the end of it.
   const bx = 216;
   const by = 20;
-  o.push('  <mask id="long"><rect x="0" y="0" width="1200" height="430" fill="url(#fade)"/></mask>');
-  o.push('  <g mask="url(#long)">');
-  o.push(`    <rect class="sheet front" x="${bx}" y="${by}" width="260" height="410" rx="10"/>`);
-  o.push(`    <rect class="pill" x="${bx + 20}" y="${by + 24}" width="120" height="12" rx="6"/>`);
-  o.push(`    ${bars(bx + 20, by + 50, [220, 200, 180])}`);
-  o.push(`    ${codeBlock(bx + 20, by + 104)}`);
-  o.push(`    ${bars(bx + 20, by + 178, [210, 220, 150])}`);
-  o.push(`    <rect class="pill" x="${bx + 20}" y="${by + 226}" width="44" height="10" rx="5"/><rect class="pill" x="${bx + 72}" y="${by + 226}" width="44" height="10" rx="5"/><rect class="stale" x="${bx + 124}" y="${by + 224}" width="52" height="14" rx="7"/>`);
-  o.push(`    ${bars(bx + 20, by + 254, [200])}<rect class="dead" x="${bx + 20}" y="${by + 268}" width="96" height="8" rx="4"/>${bars(bx + 124, by + 268, [90])}`);
-  o.push(`    ${codeBlock(bx + 20, by + 292)}`);
-  o.push(`    ${bars(bx + 20, by + 366, [220, 190, 205])}`);
-  o.push("  </g>");
+  for (const line of beforePage({ bx, by })) o.push(line);
   const anchors = { fold: by + 96, code: by + 133, badge: by + 231, link: by + 272 };
-  o.push(`  <path class="fold" d="M${bx - 10},${anchors.fold} h280"/>`);
-  for (const p of spec.before.problems) {
+  o.push(foldLine({ bx, y: anchors.fold }));
+  const beforePoints = spec.before.problems.map((p) => {
     const y = anchors[p.at];
     if (y === undefined) throw new Error(`Unknown place "${p.at}" on the before page. Known: ${Object.keys(anchors).join(", ")}.`);
-    o.push(`  <circle class="mark" cx="${bx - 10}" cy="${y}" r="4"/><path class="lead" d="M${bx - 10},${y} h-12"/>`);
-    o.push(`  <text class="wrong" x="${bx - 28}" y="${y + 5}" font-size="15" text-anchor="end">${esc(p.label)}</text>`);
-  }
+    return { y, label: p.label };
+  });
+  for (const line of problemMarks({ bx, points: beforePoints })) o.push(line);
   o.push(`  <text class="title" x="${bx + 130}" y="462" font-size="17" text-anchor="middle">${esc(spec.before.label)}</text>`);
 
   // The one step in between. The mechanism is a single arrow.
@@ -234,20 +189,14 @@ function renderBeforeAfter(spec) {
   // After: a short page, every part in its place.
   const ax = 700;
   const ay = 60;
-  o.push(`  <rect class="sheet front" x="${ax}" y="${ay}" width="260" height="300" rx="10"/>`);
-  o.push(`  <circle class="dot" cx="${ax + 92}" cy="${ay + 30}" r="7"/><rect class="pill" x="${ax + 106}" y="${ay + 24}" width="76" height="12" rx="6"/>`);
-  o.push(`  <rect class="pill" x="${ax + 40}" y="${ay + 52}" width="180" height="9" rx="4.5"/>`);
-  o.push(`  <rect class="card" x="${ax + 24}" y="${ay + 76}" width="212" height="70" rx="8"/>`);
-  o.push(`  <rect class="bar" x="${ax + 60}" y="${ay + 90}" width="30" height="42" rx="4"/><path class="flow" d="M${ax + 100},${ay + 111} h56" marker-end="url(#arrow)"/><rect class="pill" x="${ax + 168}" y="${ay + 96}" width="30" height="30" rx="4"/>`);
-  o.push(`  ${[0, 1, 2, 3].map((i) => `<rect class="pill" x="${ax + 34 + i * 50}" y="${ay + 162}" width="42" height="10" rx="5"/>`).join("")}`);
-  o.push(`  ${[150, 170, 132, 160].map((w, i) => `<circle class="dot" cx="${ax + 40}" cy="${ay + 196 + i * 22}" r="4"/><rect class="bar" x="${ax + 54}" y="${ay + 192 + i * 22}" width="${w}" height="8" rx="4"/>`).join("")}`);
+  for (const line of afterPage({ ax, ay })) o.push(line);
   const parts = { tagline: ay + 56, picture: ay + 111, badges: ay + 167, features: ay + 229 };
-  for (const p of spec.after.parts) {
+  const afterPoints = spec.after.parts.map((p) => {
     const y = parts[p.at];
     if (y === undefined) throw new Error(`Unknown part "${p.at}" on the after page. Known: ${Object.keys(parts).join(", ")}.`);
-    o.push(`  <circle class="good" cx="${ax + 270}" cy="${y}" r="4"/><path class="goodlead" d="M${ax + 270},${y} h12"/>`);
-    o.push(`  <text class="title" x="${ax + 288}" y="${y + 5}" font-size="15">${esc(p.label)}</text>`);
-  }
+    return { y, label: p.label };
+  });
+  for (const line of partMarks({ ax, points: afterPoints })) o.push(line);
   if (spec.after.backing) {
     o.push(`  ${okBadge(ax + 38, ay + 322)}`);
     o.push(`  <text class="muted" x="${ax + 66}" y="${ay + 337}" font-size="15">${esc(spec.after.backing)}</text>`);
@@ -273,9 +222,7 @@ function renderFanFlat(spec) {
   sources.forEach((s, j) => {
     const cy = Math.round(mid + (j - (k - 1) / 2) * gap);
     const y = cy - 59;
-    o.push(`  <g><rect class="card" x="24" y="${y}" width="190" height="118" rx="14"/>`);
-    o.push(`    ${glyph(s.icon, 97, y + 20, 44)}`);
-    o.push(`    <text class="title" x="119" y="${y + 96}" font-size="19" text-anchor="middle">${esc(s.label)}</text></g>`);
+    for (const line of flatSourceCard({ y, icon: s.icon, label: s.label })) o.push(line);
     const lean = Math.sign(cy - mid);
     o.push(`  ${flowCurve({ x1: 220, y1: cy, c1x: 272, c1y: cy, c2x: 300, c2y: mid + lean * 45, x2: 336, y2: mid + lean * 15, marker: true })}`);
     if (s.gives) o.push(`  <text class="muted" x="278" y="${lean > 0 ? cy + 33 : cy - 17}" font-size="15" text-anchor="middle">${esc(s.gives)}</text>`);
@@ -298,9 +245,7 @@ function renderFanFlat(spec) {
 
   const d = spec.deliverable;
   const top = mid - 158;
-  for (const line of page(d.kind === "table" ? "table" : "document", 900, top, d.heading ?? d.label)) o.push(`  ${line}`);
-  o.push(`  <text class="title" x="1020" y="${top + 326}" font-size="16" text-anchor="middle">${esc(d.label)}</text>`);
-  if (d.backing) o.push(`  <text class="muted" x="1020" y="${top + 346}" font-size="14" text-anchor="middle">${esc(d.backing)}</text>`);
+  for (const line of deliverablePage({ kind: d.kind === "table" ? "table" : "document", x: 900, y: top, heading: d.heading ?? d.label, label: d.label, backing: d.backing })) o.push(`  ${line}`);
   o.push("</svg>");
   return o.join("\n") + "\n";
 }
@@ -382,76 +327,21 @@ function chartHead(o, spec, height) {
   );
 }
 
-// The soundings scattered across the water, each an [x, y, label] where y is measured at the pierless four-item
-// height; renderFanChart shifts them down by delta with everything else that grows with the canvas.
-const SOUNDINGS = [
-  [176, 118, "7"],
-  [300, 148, "12"],
-  [84, 380, "9"],
-  [330, 372, "11"],
-  [760, 420, "8"],
-  [410, 96, "14"],
-  [150, 490, "4"],
-  [430, 494, "6"],
-  [690, 488, "5"],
-];
-
 // The style's own fixed world: parchment, rhumb lines, soundings, moon and stars, compass rose, gulls. Identical
 // for every spec drawn in the chart style at a given height, per references/contract.md. `height` sizes the
 // parchment itself; `delta` (0 at the pierless four-item count) shifts the soundings down with the sea.
 function chartScene(o, height, delta) {
   o.push(`  <rect class="bg" x="0" y="0" width="${CHART_W}" height="${height}"/>`);
-  o.push('  <g transform="translate(764,58)"><path class="rhumb" d="M0,0 L0,-900 M0,0 L344,-831 M0,0 L636,-636 M0,0 L831,-344 M0,0 L900,0 M0,0 L831,344 M0,0 L636,636 M0,0 L344,831 M0,0 L0,900 M0,0 L-344,831 M0,0 L-636,636 M0,0 L-831,344 M0,0 L-900,0 M0,0 L-831,-344 M0,0 L-636,-636 M0,0 L-344,-831"/></g>');
-  o.push(`  <g class="sound serif" font-size="11">${SOUNDINGS.map(([x, y, t]) => `<text x="${x}" y="${y + delta}">${t}</text>`).join("")}</g>`);
-  o.push('  <g class="moon"><path d="M128,100 a14,14 0 1 0 6,24 a11,11 0 1 1 -6,-24 z"/></g>');
-  o.push('  <g class="stars"><circle cx="610" cy="30" r="1.3"/><circle cx="560" cy="78" r="1.1"/><circle cx="96" cy="100" r="1.2"/><circle cx="40" cy="150" r="1"/><circle cx="330" cy="110" r="1"/><circle cx="800" cy="130" r="1.2"/><path d="M640,64 l1.6,-5 1.6,5 5,1.6 -5,1.6 -1.6,5 -1.6,-5 -5,-1.6 z"/></g>');
-  o.push('  <g transform="translate(764,58)" filter="url(#rough)"><circle class="ring" r="28"/><circle class="ring" r="31" stroke-dasharray="1.5 3"/><polygon class="star-open" points="0,-34 2.7,-6.5 14.1,-14.1 6.5,-2.7 34,0 6.5,2.7 14.1,14.1 2.7,6.5 0,34 -2.7,6.5 -14.1,14.1 -6.5,2.7 -34,0 -6.5,-2.7 -14.1,-14.1 -2.7,-6.5"/><path class="star-fill" d="M0,0 L0,-34 L-2.7,-6.5 Z M0,0 L34,0 L6.5,-2.7 Z M0,0 L0,34 L2.7,6.5 Z M0,0 L-34,0 L-6.5,2.7 Z"/><circle class="star-fill" r="2"/></g>');
-  o.push('  <text class="serif ink" x="764" y="17" font-size="11" font-weight="700" text-anchor="middle">N</text>');
-  o.push('  <g class="gull" filter="url(#rough)"><path d="M30,44 q7,-8 14,0 q7,-8 14,0"/><path d="M76,64 q5,-6 10,0 q5,-6 10,0"/></g>');
+  o.push(rhumbLines());
+  o.push(soundingLabels({ delta }));
+  for (const line of nightSky()) o.push(line);
+  for (const line of compassRose()) o.push(line);
+  o.push(gulls());
 }
-
-// A wave band's baseline (and its one Q control point) run the full canvas width, ending in a shared flat floor
-// (`bottom`) that always sits well past the visible edge. `delta` is 0 at the pierless four-item height.
-function wavePath(cls, baseline, control, bottom) {
-  const tPoints = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900]
-    .map((x) => `T ${x},${baseline}`)
-    .join(" ");
-  return `    <path class="${cls}" d="M-50,${baseline} Q -25.0,${control} 0,${baseline} ${tPoints} L 880,${bottom} L -50,${bottom} Z"/>`;
-}
-
-// The ink crests riding each wave, each an [x, y] plus its own little arc, y measured at the pierless height.
-const CRESTS = [
-  [20, 452, 8, -5, 16],
-  [238, 456, 8, -5, 16],
-  [318, 470, 7, -4, 14],
-  [512, 453, 8, -5, 16],
-  [602, 468, 7, -4, 14],
-  [742, 455, 8, -5, 16],
-  [372, 488, 6, -4, 12],
-  [650, 490, 6, -4, 12],
-  [92, 486, 6, -4, 12],
-];
 
 function chartWavesAndBoat(o, delta) {
-  const bottom = 520 + delta;
-  o.push('  <g filter="url(#rough)">');
-  o.push(wavePath("w1", 446 + delta, 439 + delta, bottom));
-  o.push(wavePath("w2", 462 + delta, 456 + delta, bottom));
-  o.push(wavePath("w3", 480 + delta, 475 + delta, bottom));
-  o.push(`    <path class="crest" d="${CRESTS.map(([x, y, qx, qy, qx2]) => `M${x},${y + delta} q${qx},${qy} ${qx2},0`).join(" ")}"/>`);
-  o.push("  </g>");
-  o.push(`  <g transform="translate(112,${446 + delta}) rotate(-3)" filter="url(#rough)">`);
-  o.push('    <path class="hull" d="M-40,-8 L40,-8 Q32,8 0,10 Q-32,8 -40,-8 Z"/>');
-  o.push('    <path class="line" d="M-30,-2 Q0,4 30,-2"/>');
-  o.push('    <path class="line" d="M0,-8 V-66" stroke-width="2"/>');
-  o.push('    <path class="sail" d="M4,-62 Q 28,-36 32,-12 L4,-12 Z"/>');
-  o.push('    <path class="sail" d="M-4,-58 L-28,-12 L-4,-12 Z"/>');
-  o.push('    <path class="line" d="M0,-66 L-42,-9"/>');
-  o.push('    <rect x="-15" y="-50" width="7" height="6" fill="#b3342b"/>');
-  o.push('    <path d="M-26,-37 l7,0 -3.5,6 z" fill="#d9a632"/>');
-  o.push('    <rect x="-37" y="-24" width="7" height="6" fill="#2b4a7e"/>');
-  o.push('    <path d="M0,-66 l12,3 -12,3 z" fill="#b3342b"/>');
-  o.push("  </g>");
+  for (const line of seaBands({ delta })) o.push(line);
+  for (const line of sailboat({ delta })) o.push(line);
 }
 
 // The chart headline's coarse per-character room, the same kind of rule assertFits uses for card labels: an
@@ -513,18 +403,7 @@ function renderFanChart(spec) {
   // The source: the one thing the reader does, drawn as a browser chrome with a green button.
   const source = spec.source ?? (spec.sources ?? [])[0];
   if (source) {
-    o.push('  <g transform="rotate(-2 160 255)">');
-    o.push('    <rect class="paper" x="40" y="178" width="240" height="154" rx="6" filter="url(#roughds)"/>');
-    o.push('    <rect class="chrome" x="54" y="192" width="192" height="19" rx="4"/>');
-    o.push('    <circle class="dot" cx="64" cy="201.5" r="2.3"/><circle class="dot" cx="72" cy="201.5" r="2.3"/><circle class="dot" cx="80" cy="201.5" r="2.3"/>');
-    o.push('    <rect class="bar" x="58" y="226" width="140" height="8" rx="4"/>');
-    o.push('    <rect class="bar" x="58" y="241" width="96" height="7" rx="3.5"/>');
-    o.push('    <rect x="58" y="262" width="160" height="32" rx="16" fill="#1f7a45"/>');
-    o.push(`    ${rawGlyph(source.icon, 69, 270, 14.88, 'stroke="#f7f0de" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"')}`);
-    o.push(`    <text class="sans" x="90" y="283" font-size="12.5" font-weight="600" fill="#f7f0de">${esc(source.label)}</text>`);
-    if (source.note) o.push(`    <text class="serif muted" x="58" y="318" font-size="12" font-style="italic">${esc(source.note)}</text>`);
-    o.push(`    ${grommet(266, 255)}`);
-    o.push("  </g>");
+    for (const line of chartSourceCard({ icon: source.icon, label: source.label, note: source.note })) o.push(line);
     // The source card itself never moves; only the end tied to the hub follows it when the hub does.
     o.push(`  <g filter="url(#rough)">${ropeLink({ x1: 272, y1: 255, c1x: 295, c1y: 248, c2x: 314, c2y: hubCy + 7, x2: 334, y2: hubCy })}</g>`);
   }
@@ -534,13 +413,7 @@ function renderFanChart(spec) {
 
   // The aside: the one handwritten line, split on its sentence breaks, with a curly line pointing at the hub.
   if (spec.aside) {
-    const sentences = spec.aside.trim().split(/(?<=[.!?])\s+/);
-    const line1 = sentences[0];
-    const line2 = sentences.slice(1).join(" ");
-    o.push(`  <text class="hand muted" x="176" y="402" font-size="17" transform="rotate(-3 176 402)">${esc(line1)}</text>`);
-    if (line2) o.push(`  <text class="hand muted" x="192" y="424" font-size="17" transform="rotate(-3 192 424)">${esc(line2)}</text>`);
-    o.push('  <path class="line" d="M342,404 C 372,394 380,362 372,334" filter="url(#rough)"/>');
-    o.push('  <path class="line" d="M365,342 L372,332 L379,341"/>');
+    for (const line of asideLine({ aside: spec.aside })) o.push(line);
   }
 
   // The handled cards: what gets done, fanned out from the hub on rope, tied through brass grommets. Three or
@@ -574,7 +447,7 @@ function renderFanChart(spec) {
   if (spec.more) {
     const i = n;
     const cy = Math.round(HUB.cy + (i - n / 2) * gapY);
-    o.push(`  <g><rect class="c-${THEMES[i % THEMES.length]}" x="${baseX}" y="${cy - cardH / 2}" width="${cardW}" height="${cardH}" rx="6" stroke-dasharray="4 4"/><text class="serif muted" x="${baseX + 36}" y="${cy + 6}" font-size="17" font-style="italic">and more</text></g>`);
+    o.push(`  ${chartMoreCard({ x: baseX, cy, w: cardW, h: cardH, theme: THEMES[i % THEMES.length] })}`);
   }
 
   chartWavesAndBoat(o, delta);
@@ -740,13 +613,7 @@ function renderFanWindow(spec) {
 
   // Faint feed curves from each inbox row to the calendar range's left edge (fixed, since
   // that edge never moves): the style's own fan-in, drawn under the calendar panel.
-  o.push('  <g class="feed">');
-  rows.forEach((_, i) => {
-    const top = dividers[i];
-    const startY = top + 19;
-    o.push(`    <path d="M${inboxRight},${startY} C ${inboxRight + 52},${startY} ${inboxRight + 64},${WINDOW_ARROW_Y} ${WINDOW_CAL_X + 46},${WINDOW_ARROW_Y}"/>`);
-  });
-  o.push("  </g>");
+  for (const line of feedCurves({ tops: dividers.slice(0, n), inboxRight, targetX: WINDOW_CAL_X + 46, targetY: WINDOW_ARROW_Y })) o.push(line);
 
   // The calendar panel: fixed height and a fixed five-row month grid, weekday letters, a
   // highlighted range of days with dots. None of this is data-driven beyond the header.
@@ -774,28 +641,7 @@ function renderFanWindow(spec) {
   // decorative and fixed, since the spec carries no line-item list.
   const d = spec.deliverable;
   const sheetX = calRight + 68;
-  for (const line of stackedSheet({
-    x: sheetX,
-    y: 144,
-    w: 150,
-    h: 176,
-    rx: 3,
-    back2: { dx: 12, dy: 12, cls: "sheet-back" },
-    back1: { dx: 6, dy: 6, cls: "sheet-back" },
-    frontClass: "sheet",
-    filter: "soft",
-  }))
-    o.push(`  ${line}`);
-  o.push(`  <text class="sans ink" x="${sheetX + 14}" y="168" font-size="13" font-weight="700">${esc(d.heading ?? d.label)}</text>`);
-  o.push(`  <path class="inks" d="M${sheetX + 14},176 h122" stroke-width="1" opacity="0.35"/>`);
-  [66, 54, 74, 48, 62, 58].forEach((w, i) => {
-    const ry = 188 + 16 * i;
-    o.push(`  <rect class="bar" x="${sheetX + 14}" y="${ry}" width="${w}" height="5" rx="2.5"/><rect class="bar2" x="${sheetX + 108}" y="${ry}" width="28" height="5" rx="2.5"/>`);
-  });
-  o.push(`  <path class="inks" d="M${sheetX + 14},288 h122" stroke-width="1.2"/>`);
-  o.push(`  <rect class="total" x="${sheetX + 14}" y="296" width="44" height="6" rx="3"/><rect class="total" x="${sheetX + 100}" y="296" width="36" height="6" rx="3"/>`);
-  o.push(`  <text class="sans ink" x="${sheetX + 81}" y="360" font-size="15" font-weight="700" text-anchor="middle">${esc(d.label)}</text>`);
-  if (d.backing) o.push(`  <text class="sans muted" x="${sheetX + 81}" y="377" font-size="11" font-weight="500" text-anchor="middle">${esc(d.backing)}</text>`);
+  for (const line of windowDeliverablePacket({ x: sheetX, heading: d.heading ?? d.label, label: d.label, backing: d.backing })) o.push(line);
 
   o.push("</svg>");
   return o.join("\n") + "\n";

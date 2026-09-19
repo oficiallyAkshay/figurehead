@@ -15,13 +15,19 @@ import { svgHead } from "../scripts/components/svg-shell.mjs";
 import { okBadge } from "../scripts/components/badges.mjs";
 import { flowCurve, ropeLink, grommet } from "../scripts/components/curves.mjs";
 import { stackedSheet } from "../scripts/components/sheets.mjs";
-import { flatCard, chartHandledCard } from "../scripts/components/cards.mjs";
+import { flatCard, chartHandledCard, chartMoreCard } from "../scripts/components/cards.mjs";
 import { chip } from "../scripts/components/chip.mjs";
 import { chartHub, windowHandoffHub } from "../scripts/components/hub-disc.mjs";
 import { brandedText, chartHeadlineBlock, windowHeadlineBlock } from "../scripts/components/headline.mjs";
 import { panelWithChrome } from "../scripts/components/panel.mjs";
 import { listRow } from "../scripts/components/list-rows.mjs";
 import { calendarGrid } from "../scripts/components/calendar.mjs";
+import { flatSourceCard, chartSourceCard } from "../scripts/components/source-cards.mjs";
+import { deliverablePage } from "../scripts/components/deliverable-page.mjs";
+import { windowDeliverablePacket } from "../scripts/components/window-deliverable.mjs";
+import { feedCurves } from "../scripts/components/feed-curves.mjs";
+import { rhumbLines, soundingLabels, nightSky, compassRose, gulls, seaBands, sailboat, asideLine } from "../scripts/components/chart-scene.mjs";
+import { beforePage, foldLine, problemMarks, afterPage, partMarks } from "../scripts/components/before-after.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const examplesDir = resolve(root, "examples");
@@ -442,6 +448,33 @@ const componentCases = [
   { name: "panelWithChrome", fn: () => panelWithChrome({ x: 0, y: 0, w: 10, h: 10, iconGlyph: "<rect/>", labelX: 0, label: "L" }).join("\n"), tag: "<rect" },
   { name: "listRow", fn: () => listRow({ x: 0, top: 0, icon: "mail", label: "L", w1: 1, w2: 1, rightX: 10 }).join("\n"), tag: "<g" },
   { name: "calendarGrid", fn: () => calendarGrid({ x: 0, top: 0 }).join("\n"), tag: "<g" },
+  { name: "chartMoreCard", fn: () => chartMoreCard({ x: 0, cy: 0, w: 10, h: 10, theme: "navy" }), tag: "<g" },
+  { name: "flatSourceCard", fn: () => flatSourceCard({ y: 0, icon: "mail", label: "L" }).join("\n"), tag: "<g" },
+  { name: "chartSourceCard", fn: () => chartSourceCard({ icon: "mail", label: "L", note: "N" }).join("\n"), tag: "<g" },
+  {
+    name: "deliverablePage",
+    fn: () => deliverablePage({ kind: "document", x: 0, y: 0, heading: "H", label: "L", backing: "B" }).join("\n"),
+    tag: "<rect",
+  },
+  {
+    name: "windowDeliverablePacket",
+    fn: () => windowDeliverablePacket({ x: 0, heading: "H", label: "L", backing: "B" }).join("\n"),
+    tag: "<rect",
+  },
+  { name: "feedCurves", fn: () => feedCurves({ tops: [0], inboxRight: 10, targetX: 20, targetY: 30 }).join("\n"), tag: "<g" },
+  { name: "rhumbLines", fn: () => rhumbLines(), tag: "<g" },
+  { name: "soundingLabels", fn: () => soundingLabels({ delta: 0 }), tag: "<g" },
+  { name: "nightSky", fn: () => nightSky().join("\n"), tag: "<g" },
+  { name: "compassRose", fn: () => compassRose().join("\n"), tag: "<g" },
+  { name: "gulls", fn: () => gulls(), tag: "<g" },
+  { name: "seaBands", fn: () => seaBands({ delta: 0 }).join("\n"), tag: "<g" },
+  { name: "sailboat", fn: () => sailboat({ delta: 0 }).join("\n"), tag: "<g" },
+  { name: "asideLine", fn: () => asideLine({ aside: "One sentence. Two sentence." }).join("\n"), tag: "<text" },
+  { name: "beforePage", fn: () => beforePage({ bx: 0, by: 0 }).join("\n"), tag: "<mask" },
+  { name: "foldLine", fn: () => foldLine({ bx: 0, y: 0 }), tag: "<path" },
+  { name: "problemMarks", fn: () => problemMarks({ bx: 0, points: [{ y: 10, label: "L" }] }).join("\n"), tag: "<circle" },
+  { name: "afterPage", fn: () => afterPage({ ax: 0, ay: 0 }).join("\n"), tag: "<rect" },
+  { name: "partMarks", fn: () => partMarks({ ax: 0, points: [{ y: 10, label: "L" }] }).join("\n"), tag: "<circle" },
 ];
 
 for (const { name, fn, tag } of componentCases) {
