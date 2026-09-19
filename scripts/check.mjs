@@ -63,9 +63,8 @@ const THEME_VALUES = ["navy", "sea", "ochre", "plum"];
 const DELIVERABLE_KIND_VALUES = ["document", "table"];
 
 // Top-level fields every spec may carry, plus the fields specific to each kind.
-// "heading" on deliverable is not in the contract's field list, but the seed
-// renderer reads `d.heading ?? d.label` and examples/tidy-inbox's committed
-// spec uses it — see the PR body for this as a contract note.
+// "heading" on deliverable is a documented field (the seed renderer reads
+// `d.heading ?? d.label`; examples/tidy-inbox's committed spec uses it).
 const TOP_COMMON = ["kind", "style", "title", "headline", "subhead", "scene"];
 const FAN_FIELDS = ["source", "sources", "hub", "handled", "more", "deliverable", "aside"];
 const BEFORE_AFTER_FIELDS = ["before", "by", "after"];
@@ -80,9 +79,10 @@ function checkSpecShape(spec) {
     return findings;
   }
 
-  if (spec.kind === undefined) {
-    fail('The spec has no "kind" field.', 'Add "kind": "fan" or "kind": "before-after".');
-  } else if (!KIND_VALUES.includes(spec.kind)) {
+  // "kind" defaults to "fan" when absent (the contract and the seed renderer
+  // agree on this default), so a missing "kind" is not itself a fail; an
+  // invalid, present "kind" still is.
+  if (spec.kind !== undefined && !KIND_VALUES.includes(spec.kind)) {
     fail(`"kind" is "${spec.kind}", not one of ${KIND_VALUES.join(", ")}.`, `Set "kind" to one of ${KIND_VALUES.join(", ")}.`);
   }
 
