@@ -1,6 +1,6 @@
 # Statement to shape
 
-Three questions, asked of layer two, not a lookup table. The four heroes that exist today (boomerang, readmerlin, clonometer, pierless) each landed on a different shape; those shapes are outputs of the questions, not a menu to pick from.
+Three questions, asked of layer two, not a lookup table. The four heroes that exist today (the receipts hero, readmerlin, clonometer, pierless) each landed on a different shape; those shapes are outputs of the questions, not a menu to pick from.
 
 ## Q1. How many named parts, and are they the same kind or different kinds?
 
@@ -39,9 +39,9 @@ If an engineer would sketch the same picture to explain the architecture to anot
 
 The three-way trust **topology** considered for pierless was correct, interesting, and rejected for exactly this reason: three nodes, forbidden edges, arrows between components. It read as a data-flow diagram regardless of how well it matched the mechanism. Q1 and Q2 both pointed at "constrained edges", and the shape was still wrong, because the litmus test overrides the questions: mechanism informs the drawing, it is never the drawing's subject. A **topology** is not disqualified in general by this one case; it is disqualified whenever it reads as an architecture sketch, which a topology of components very often will.
 
-## The counter-lesson: the fan is not owned by boomerang
+## The counter-lesson: the fan is not owned by the receipts hero
 
-The fan was rejected for pierless once, then accepted. Rejected: it was boomerang's geometry with new labels and an anonymous dot at the hub, which reads as a copied template. Accepted: the hub became the product's own mark (an anchor, not a dot), the source became the one literal thing the reader does (the merge button), and the fanned items became value-framed capabilities rather than mechanisms or rules.
+The fan was rejected for pierless once, then accepted. Rejected: it was the receipts hero's geometry (`examples/tidy-inbox`) with new labels and an anonymous dot at the hub, which reads as a copied template. Accepted: the hub became the product's own mark (an anchor, not a dot), the source became the one literal thing the reader does (the merge button), and the fanned items became value-framed capabilities rather than mechanisms or rules.
 
 Shape families are reusable when the concept type matches the questions above. What reads as borrowed is a copied drawing with new words on it, not a shared grammar. Before reusing a shape from another hero, check that the hub in the new picture is this product's own mark, not the last product's mark relabelled.
 
