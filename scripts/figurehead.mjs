@@ -584,9 +584,9 @@ async function runCli(argv) {
       process.exitCode = 2;
       return;
     }
-    let checkMod;
+    let check;
     try {
-      checkMod = await import(new URL("./check.mjs", import.meta.url));
+      ({ check } = await import(new URL("./check.mjs", import.meta.url)));
     } catch {
       console.error("the checks are not installed yet (scripts/check.mjs does not exist)");
       process.exitCode = 2;
@@ -594,7 +594,7 @@ async function runCli(argv) {
     }
     const spec = JSON.parse(readFileSync(specFile, "utf8"));
     const svg = readFileSync(svgFile, "utf8");
-    const results = checkMod.check(spec, svg, { repo });
+    const results = await check(spec, svg, { repo });
     let failed = false;
     for (const r of results) {
       console.log([r.id, r.level, r.message, r.repair].join("\t"));
