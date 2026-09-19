@@ -1,0 +1,50 @@
+{
+  "kind": "fan",
+  "style": "window",
+  "title": "Boomerang reads your inbox, where rides, meals, flights, hotels, transit, Wi-Fi and more arrive as receipts, checks your calendar for the trip dates, and files one PDF: a summary page first, every receipt behind it, while you are still away",
+  "headline": "Boomerang reads your inbox, checks your calendar, files the claim.",
+  "subhead": "every receipt inside the trip dates, in order, while you're still away",
+  "sources": [
+    {
+      "label": "Inbox",
+      "gives": "receipts"
+    },
+    {
+      "label": "Calendar",
+      "gives": "trip dates"
+    }
+  ],
+  "hub": { "label": "Boomerang", "icon": "git-merge" },
+  "handled": [
+    {
+      "label": "Rides",
+      "icon": "car"
+    },
+    {
+      "label": "Meals",
+      "icon": "utensils"
+    },
+    {
+      "label": "Flights",
+      "icon": "plane"
+    },
+    {
+      "label": "Hotels",
+      "icon": "bed"
+    },
+    {
+      "label": "Transit",
+      "icon": "train"
+    },
+    {
+      "label": "Wi-Fi",
+      "icon": "wifi"
+    }
+  ],
+  "more": true,
+  "deliverable": {
+    "label": "one PDF",
+    "heading": "Summary",
+    "backing": "summary page first, every receipt behind it"
+  }
+}

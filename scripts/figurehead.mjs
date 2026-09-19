@@ -609,12 +609,237 @@ function renderFanChart(spec) {
 }
 
 // ---------------------------------------------------------------------------
+// The window style: an automation between two app surfaces, reproducing
+// examples/receipts/reference.svg. The inbox panel (left) lists every handled
+// item as a row; the calendar panel (right) is the style's own fixed month
+// grid with a highlighted range. Faint feed curves run from each inbox row to
+// the range's left edge; one accent arrow hands off from the calendar panel
+// to the hub disc; the deliverable lands as a stacked summary sheet. Only the
+// two panels' headers (from `sources`), the inbox rows (from `handled` and
+// `more`), the hub label and the deliverable's heading/label/backing are
+// drawn from the spec. Everything else — the calendar's grid, its
+// highlighted range and dots, the hub's chevron mark, the handoff arrow and
+// the deliverable sheet's own decorative rows — is the style's fixed world,
+// at reference.svg's own fixed positions, regardless of item count. Only the
+// inbox panel's height (and so the canvas height, when inbox is the taller
+// panel) grows with the handled-item count (the "more" row counts as one
+// more item); both panels always start at the same y, so a shorter panel
+// just leaves whitespace below it. At seven rows (six handled, one "more")
+// this reproduces reference.svg's own 900x480 canvas and 318-tall inbox
+// panel, per references/contract.md.
+// ---------------------------------------------------------------------------
+const WINDOW_W = 900;
+const WINDOW_PANEL_TOP = 90;
+const WINDOW_ROW_H = 38;
+const WINDOW_HEADER_SPACE = 42; // panel top to the first row divider
+const WINDOW_FOOTER_PAD = 10; // last row divider to the inbox panel's own bottom edge
+const WINDOW_INBOX_X = 40;
+const WINDOW_INBOX_W = 280;
+const WINDOW_CAL_X = 386;
+const WINDOW_CAL_W = 250;
+const WINDOW_CAL_H = 236; // the calendar panel's fixed height, never data-driven
+const WINDOW_BOTTOM_MARGIN = 72; // the taller panel's bottom edge to the canvas edge
+const WINDOW_ARROW_Y = 196; // the calendar panel's fixed handoff row: hub, arrow and feed-curve target
+
+// Nine hand-set [subject-bar, preview-bar] widths, cycled by row index the same way
+// CARD_TILT cycles for the chart style's cards: fixed, not random, so rows read as real
+// receipts of varying length rather than a repeating pattern. The first six are
+// reference.svg's own six handled-item rows (Rides through Wi-Fi).
+const WINDOW_BAR_WIDTHS = [
+  [92, 60],
+  [80, 66],
+  [98, 54],
+  [86, 70],
+  [74, 58],
+  [90, 48],
+  [88, 62],
+  [76, 54],
+  [94, 68],
+];
+
+function windowHeadline(headline, brandWord) {
+  const idx = brandWord ? headline.indexOf(brandWord) : -1;
+  if (idx === -1) return esc(headline);
+  const before = headline.slice(0, idx);
+  const after = headline.slice(idx + brandWord.length);
+  return `${esc(before)}<tspan class="accent">${esc(brandWord)}</tspan>${esc(after)}`;
+}
+
+function windowHead(o, spec, height) {
+  o.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WINDOW_W} ${height}" width="${WINDOW_W}" height="${height}" role="img" aria-labelledby="hero-title">`);
+  o.push(`  <title id="hero-title">${esc(spec.title)}</title>`);
+  o.push("  <defs>");
+  o.push('    <marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,1 L9,5 L1,9" class="accent-s" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>');
+  o.push('    <filter id="soft" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.10"/></filter>');
+  o.push("    <style>");
+  o.push(`      .sans { font-family: ${FONT}; }`);
+  o.push("      .bg { fill: #f4f6f9; }");
+  o.push('      .panel { fill: #ffffff; stroke: #d5dbe3; stroke-width: 1; }');
+  o.push('      .ink { fill: #111827; } .inks { stroke: #111827; }');
+  o.push("      .muted { fill: #6b7280; }");
+  o.push("      .faint { fill: #9ca3af; }");
+  o.push('      .accent { fill: #2563eb; } .accent-s { stroke: #2563eb; }');
+  o.push('      .range { fill: #dbeafe; stroke: #2563eb; stroke-width: 1.5; }');
+  o.push('      .cell { fill: none; stroke: #e5e7eb; stroke-width: 1; }');
+  o.push('      .bar { fill: #e5e7eb; } .bar2 { fill: #d1d5db; }');
+  o.push("      .rowline { stroke: #eef0f3; stroke-width: 1; }");
+  o.push("      .g { fill: none; stroke: #111827; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }");
+  o.push("      .g-muted { fill: none; stroke: #9ca3af; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }");
+  o.push('      .feed { fill: none; stroke: #2563eb; stroke-width: 1.2; opacity: 0.45; }');
+  o.push('      .hand { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; }');
+  o.push('      .sheet { fill: #ffffff; stroke: #111827; stroke-width: 1.3; }');
+  o.push('      .sheet-back { fill: #eef0f3; stroke: #9ca3af; stroke-width: 1; }');
+  o.push("      .total { fill: #111827; }");
+  o.push("      .mark { fill: #ffffff; }");
+  o.push("      @media (prefers-color-scheme: dark) {");
+  o.push("        .bg { fill: #0f141b; } .panel { fill: #161c26; stroke: #2a3341; }");
+  o.push("        .ink { fill: #e5e7eb; } .inks { stroke: #e5e7eb; } .muted { fill: #9ca3af; } .faint { fill: #6b7280; }");
+  o.push('        .accent { fill: #60a5fa; } .accent-s { stroke: #60a5fa; } .range { fill: #1e3a5f; stroke: #60a5fa; }');
+  o.push("        .cell { stroke: #2a3341; } .bar { fill: #2a3341; } .bar2 { fill: #374151; } .rowline { stroke: #232b37; }");
+  o.push("        .g { stroke: #e5e7eb; } .g-muted { stroke: #6b7280; } .feed, .hand { stroke: #60a5fa; }");
+  o.push('        .sheet { fill: #161c26; stroke: #9ca3af; } .sheet-back { fill: #1f2733; stroke: #4b5563; } .total { fill: #e5e7eb; } .mark { fill: #0f141b; }');
+  o.push("      }");
+  o.push("    </style>");
+  o.push("  </defs>");
+}
+
+// The window style draws exactly two sources (the inbox panel, then the calendar panel), a
+// hub disc and a stacked deliverable sheet; it has no single "source" or handwritten "aside",
+// and its rows are not themed. A spec written for another style's shape would otherwise render
+// with pieces silently missing (or a theme silently ignored) instead of refusing by name.
+function assertWindowShape(spec) {
+  if (spec.source) throw new Error('Field "source" is not drawn by the window style; window draws two "sources" (an inbox panel, then a calendar panel). Use "sources" instead, or set style to "flat" or "chart".');
+  if (spec.aside) throw new Error('Field "aside" is not drawn by the window style; that field is chart-style only. Set style to "chart", or drop "aside".');
+  if (!spec.sources) throw new Error('The window style needs "sources" (an inbox panel, then a calendar panel) to draw; none was given.');
+  if (spec.sources.length !== 2) throw new Error(`The window style needs exactly two "sources" (an inbox panel, then a calendar panel); got ${spec.sources.length}.`);
+  if (!spec.hub) throw new Error('The window style needs a "hub" to draw; none was given.');
+  if (!spec.deliverable) throw new Error('The window style needs a "deliverable" to draw; none was given.');
+  for (const h of spec.handled ?? []) {
+    if (h.theme) throw new Error(`Field "theme" on "${h.label}" is not drawn by the window style; window's rows are not themed. Drop "theme", or set style to "chart".`);
+  }
+}
+
+function renderFanWindow(spec) {
+  assertWindowShape(spec);
+  const o = [];
+
+  const rows = [...(spec.handled ?? []).map((h) => ({ ...h, more: false })), ...(spec.more ? [{ label: "and more", icon: "more", more: true }] : [])];
+  const n = rows.length;
+
+  const inboxH = WINDOW_HEADER_SPACE + WINDOW_ROW_H * n + WINDOW_FOOTER_PAD;
+  const panelBottom = WINDOW_PANEL_TOP + Math.max(inboxH, WINDOW_CAL_H);
+  const height = panelBottom + WINDOW_BOTTOM_MARGIN;
+
+  windowHead(o, spec, height);
+  o.push(`  <rect class="bg" x="0" y="0" width="${WINDOW_W}" height="${height}"/>`);
+
+  const hub = spec.hub;
+  if (spec.headline) o.push(`  <text class="sans ink" x="450" y="40" font-size="25" font-weight="700" text-anchor="middle">${windowHeadline(spec.headline, hub.label)}</text>`);
+  if (spec.subhead) o.push(`  <text class="sans muted" x="450" y="62" font-size="14" font-weight="500" text-anchor="middle">${esc(spec.subhead)}</text>`);
+
+  const [inboxSource, calSource] = spec.sources;
+  const inboxRight = WINDOW_INBOX_X + WINDOW_INBOX_W;
+
+  // The inbox panel: every handled item, and the "and more" item, as a row (icon, bold
+  // label, subject bar, preview bar, amount bar); "and more" is a muted row with only a
+  // subject bar. Its height follows the row count; the header icon is the style's own
+  // fixed envelope, not looked up from any icon field.
+  o.push(`  <rect class="panel" x="${WINDOW_INBOX_X}" y="${WINDOW_PANEL_TOP}" width="${WINDOW_INBOX_W}" height="${inboxH}" rx="10" filter="url(#soft)"/>`);
+  o.push(`  <g class="g" transform="translate(${WINDOW_INBOX_X + 18},106) scale(0.85)"><rect x="0" y="3" width="20" height="14" rx="2"/><path d="M0,6 L10,13 L20,6"/></g>`);
+  o.push(`  <text class="sans ink" x="${WINDOW_INBOX_X + 44}" y="120" font-size="15" font-weight="700">${esc(inboxSource.label)}</text>`);
+  if (inboxSource.gives) o.push(`  <text class="sans muted" x="${inboxRight - 18}" y="120" font-size="11" font-weight="500" text-anchor="end">${esc(inboxSource.gives)}</text>`);
+
+  const dividers = [];
+  for (let i = 0; i <= n; i++) dividers.push(WINDOW_PANEL_TOP + WINDOW_HEADER_SPACE + WINDOW_ROW_H * i);
+  o.push(`  <path class="rowline" d="${dividers.map((y) => `M${WINDOW_INBOX_X},${y} H${inboxRight}`).join(" ")}"/>`);
+
+  rows.forEach((r, i) => {
+    const top = dividers[i];
+    const iconCls = r.more ? "g-muted" : "g";
+    o.push(`  ${themedGlyph(r.icon, WINDOW_INBOX_X + 18, top + 9, 18, iconCls)}`);
+    const textCls = r.more ? "sans faint" : "sans ink";
+    o.push(`  <text class="${textCls}" x="${WINDOW_INBOX_X + 50}" y="${top + 23}" font-size="14" font-weight="600">${esc(r.label)}</text>`);
+    if (r.more) {
+      o.push(`  <rect class="bar" x="${WINDOW_INBOX_X + 110}" y="${top + 15}" width="70" height="6" rx="3"/>`);
+    } else {
+      const [w1, w2] = WINDOW_BAR_WIDTHS[i % WINDOW_BAR_WIDTHS.length];
+      o.push(
+        `  <rect class="bar" x="${WINDOW_INBOX_X + 110}" y="${top + 15}" width="${w1}" height="6" rx="3"/><rect class="bar2" x="${WINDOW_INBOX_X + 110}" y="${top + 26}" width="${w2}" height="5" rx="2.5"/><rect class="bar2" x="${inboxRight - 48}" y="${top + 18}" width="30" height="6" rx="3"/>`
+      );
+    }
+  });
+
+  // Faint feed curves from each inbox row to the calendar range's left edge (fixed, since
+  // that edge never moves): the style's own fan-in, drawn under the calendar panel.
+  o.push('  <g class="feed">');
+  rows.forEach((_, i) => {
+    const top = dividers[i];
+    const startY = top + 19;
+    o.push(`    <path d="M${inboxRight},${startY} C ${inboxRight + 52},${startY} ${inboxRight + 64},${WINDOW_ARROW_Y} ${WINDOW_CAL_X + 46},${WINDOW_ARROW_Y}"/>`);
+  });
+  o.push("  </g>");
+
+  // The calendar panel: fixed height and a fixed five-row month grid, weekday letters, a
+  // highlighted range of days with dots. None of this is data-driven beyond the header.
+  o.push(`  <rect class="panel" x="${WINDOW_CAL_X}" y="${WINDOW_PANEL_TOP}" width="${WINDOW_CAL_W}" height="${WINDOW_CAL_H}" rx="10" filter="url(#soft)"/>`);
+  o.push(`  <g class="g" transform="translate(${WINDOW_CAL_X + 18},106) scale(0.85)"><rect x="1" y="3" width="18" height="16" rx="2"/><path d="M1,8 h18 M6,1 v4 M14,1 v4"/></g>`);
+  o.push(`  <text class="sans ink" x="${WINDOW_CAL_X + 42}" y="120" font-size="15" font-weight="700">${esc(calSource.label)}</text>`);
+  if (calSource.gives) o.push(`  <text class="sans muted" x="${WINDOW_CAL_X + WINDOW_CAL_W - 18}" y="120" font-size="11" font-weight="500" text-anchor="end">${esc(calSource.gives)}</text>`);
+  const weekdayXs = [0, 1, 2, 3, 4, 5, 6].map((i) => WINDOW_CAL_X + 29 + 32 * i);
+  o.push(
+    `  <g class="sans faint" font-size="9" font-weight="600" text-anchor="middle">${["S", "M", "T", "W", "T", "F", "S"].map((d, i) => `<text x="${weekdayXs[i]}" y="141">${d}</text>`).join("")}</g>`
+  );
+  const calColX = [0, 1, 2, 3, 4, 5, 6].map((i) => WINDOW_CAL_X + 14 + 32 * i);
+  const calRowY = [0, 1, 2, 3, 4].map((i) => WINDOW_PANEL_TOP + 58 + 32 * i);
+  const cell = (x, y) => `<rect x="${x}" y="${y}" width="30" height="28" rx="3"/>`;
+  o.push("  <g class=\"cell\">");
+  o.push(`    ${calColX.map((x) => cell(x, calRowY[0])).join("")}`);
+  o.push(`    ${cell(calColX[0], calRowY[1])}${cell(calColX[6], calRowY[1])}`);
+  for (const ry of [calRowY[2], calRowY[3], calRowY[4]]) o.push(`    ${calColX.map((x) => cell(x, ry)).join("")}`);
+  o.push("  </g>");
+  o.push(`  <rect class="range" x="${calColX[1]}" y="${calRowY[1]}" width="158" height="28" rx="4"/>`);
+  o.push(`  <g class="accent">${[1, 2, 3, 4, 5].map((i) => `<circle cx="${calColX[i] + 15}" cy="200" r="2"/>`).join("")}</g>`);
+
+  // The one accent handoff arrow from the calendar panel's right edge to the packet, the hub
+  // disc with its chevron mark, and the hub's label. Fixed, since the calendar panel never
+  // moves regardless of the inbox panel's height.
+  const calRight = WINDOW_CAL_X + WINDOW_CAL_W;
+  o.push(`  <path class="hand" d="M${calRight},${WINDOW_ARROW_Y} H${calRight + 62}" marker-end="url(#head)"/>`);
+  o.push(`  <circle class="accent" cx="${calRight + 30}" cy="${WINDOW_ARROW_Y}" r="12"/>`);
+  o.push(`  <path class="mark" d="M${calRight + 23},${WINDOW_ARROW_Y + 5} L${calRight + 30},${WINDOW_ARROW_Y - 7} L${calRight + 37},${WINDOW_ARROW_Y + 5} L${calRight + 30},${WINDOW_ARROW_Y + 1} Z"/>`);
+  if (hub.label) o.push(`  <text class="sans accent" x="${calRight + 30}" y="${WINDOW_ARROW_Y + 30}" font-size="11" font-weight="700" text-anchor="middle">${esc(hub.label)}</text>`);
+
+  // The deliverable: a summary sheet with rows and a total, two sheets stacked behind it,
+  // the deliverable's own label ("one PDF") and backing line. Its own line-item rows are
+  // decorative and fixed, since the spec carries no line-item list.
+  const d = spec.deliverable;
+  const sheetX = calRight + 68;
+  o.push(`  <rect class="sheet-back" x="${sheetX + 12}" y="156" width="150" height="176" rx="3"/>`);
+  o.push(`  <rect class="sheet-back" x="${sheetX + 6}" y="150" width="150" height="176" rx="3"/>`);
+  o.push(`  <rect class="sheet" x="${sheetX}" y="144" width="150" height="176" rx="3" filter="url(#soft)"/>`);
+  o.push(`  <text class="sans ink" x="${sheetX + 14}" y="168" font-size="13" font-weight="700">${esc(d.heading ?? d.label)}</text>`);
+  o.push(`  <path class="inks" d="M${sheetX + 14},176 h122" stroke-width="1" opacity="0.35"/>`);
+  [66, 54, 74, 48, 62, 58].forEach((w, i) => {
+    const ry = 188 + 16 * i;
+    o.push(`  <rect class="bar" x="${sheetX + 14}" y="${ry}" width="${w}" height="5" rx="2.5"/><rect class="bar2" x="${sheetX + 108}" y="${ry}" width="28" height="5" rx="2.5"/>`);
+  });
+  o.push(`  <path class="inks" d="M${sheetX + 14},288 h122" stroke-width="1.2"/>`);
+  o.push(`  <rect class="total" x="${sheetX + 14}" y="296" width="44" height="6" rx="3"/><rect class="total" x="${sheetX + 100}" y="296" width="36" height="6" rx="3"/>`);
+  o.push(`  <text class="sans ink" x="${sheetX + 81}" y="360" font-size="15" font-weight="700" text-anchor="middle">${esc(d.label)}</text>`);
+  if (d.backing) o.push(`  <text class="sans muted" x="${sheetX + 81}" y="377" font-size="11" font-weight="500" text-anchor="middle">${esc(d.backing)}</text>`);
+
+  o.push("</svg>");
+  return o.join("\n") + "\n";
+}
+
+// ---------------------------------------------------------------------------
 // Entry points
 // ---------------------------------------------------------------------------
 export function render(spec) {
   validateSpec(spec);
   if (spec.kind === "before-after") return renderBeforeAfter(spec);
   if (spec.style === "chart") return renderFanChart(spec);
+  if (spec.style === "window") return renderFanWindow(spec);
   return renderFanFlat(spec);
 }
 

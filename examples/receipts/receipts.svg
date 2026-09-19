@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480" role="img" aria-labelledby="hero-title">
+  <title id="hero-title">Boomerang reads your inbox, where rides, meals, flights, hotels, transit, Wi-Fi and more arrive as receipts, checks your calendar for the trip dates, and files one PDF: a summary page first, every receipt behind it, while you are still away</title>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,1 L9,5 L1,9" class="accent-s" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.10"/></filter>
+    <style>
+      .sans { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .bg { fill: #f4f6f9; }
+      .panel { fill: #ffffff; stroke: #d5dbe3; stroke-width: 1; }
+      .ink { fill: #111827; } .inks { stroke: #111827; }
+      .muted { fill: #6b7280; }
+      .faint { fill: #9ca3af; }
+      .accent { fill: #2563eb; } .accent-s { stroke: #2563eb; }
+      .range { fill: #dbeafe; stroke: #2563eb; stroke-width: 1.5; }
+      .cell { fill: none; stroke: #e5e7eb; stroke-width: 1; }
+      .bar { fill: #e5e7eb; } .bar2 { fill: #d1d5db; }
+      .rowline { stroke: #eef0f3; stroke-width: 1; }
+      .g { fill: none; stroke: #111827; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }
+      .g-muted { fill: none; stroke: #9ca3af; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }
+      .feed { fill: none; stroke: #2563eb; stroke-width: 1.2; opacity: 0.45; }
+      .hand { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; }
+      .sheet { fill: #ffffff; stroke: #111827; stroke-width: 1.3; }
+      .sheet-back { fill: #eef0f3; stroke: #9ca3af; stroke-width: 1; }
+      .total { fill: #111827; }
+      .mark { fill: #ffffff; }
+      @media (prefers-color-scheme: dark) {
+        .bg { fill: #0f141b; } .panel { fill: #161c26; stroke: #2a3341; }
+        .ink { fill: #e5e7eb; } .inks { stroke: #e5e7eb; } .muted { fill: #9ca3af; } .faint { fill: #6b7280; }
+        .accent { fill: #60a5fa; } .accent-s { stroke: #60a5fa; } .range { fill: #1e3a5f; stroke: #60a5fa; }
+        .cell { stroke: #2a3341; } .bar { fill: #2a3341; } .bar2 { fill: #374151; } .rowline { stroke: #232b37; }
+        .g { stroke: #e5e7eb; } .g-muted { stroke: #6b7280; } .feed, .hand { stroke: #60a5fa; }
+        .sheet { fill: #161c26; stroke: #9ca3af; } .sheet-back { fill: #1f2733; stroke: #4b5563; } .total { fill: #e5e7eb; } .mark { fill: #0f141b; }
+      }
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="900" height="480"/>
+  <text class="sans ink" x="450" y="40" font-size="25" font-weight="700" text-anchor="middle"><tspan class="accent">Boomerang</tspan> reads your inbox, checks your calendar, files the claim.</text>
+  <text class="sans muted" x="450" y="62" font-size="14" font-weight="500" text-anchor="middle">every receipt inside the trip dates, in order, while you're still away</text>
+  <rect class="panel" x="40" y="90" width="280" height="318" rx="10" filter="url(#soft)"/>
+  <g class="g" transform="translate(58,106) scale(0.85)"><rect x="0" y="3" width="20" height="14" rx="2"/><path d="M0,6 L10,13 L20,6"/></g>
+  <text class="sans ink" x="84" y="120" font-size="15" font-weight="700">Inbox</text>
+  <text class="sans muted" x="302" y="120" font-size="11" font-weight="500" text-anchor="end">receipts</text>
+  <path class="rowline" d="M40,132 H320 M40,170 H320 M40,208 H320 M40,246 H320 M40,284 H320 M40,322 H320 M40,360 H320 M40,398 H320"/>
+  <g class="g" transform="translate(58,141) scale(0.9)"><path d="M2,12 l3,-6 h10 l3,6 h1 v6 h-2 a2,2 0 0 1 -4,0 h-6 a2,2 0 0 1 -4,0 h-2 v-6 z"/><path d="M4,12 h12"/></g>
+  <text class="sans ink" x="90" y="155" font-size="14" font-weight="600">Rides</text>
+  <rect class="bar" x="150" y="147" width="92" height="6" rx="3"/><rect class="bar2" x="150" y="158" width="60" height="5" rx="2.5"/><rect class="bar2" x="272" y="150" width="30" height="6" rx="3"/>
+  <g class="g" transform="translate(58,179) scale(0.9)"><path d="M5,1 v7 a2,2 0 0 0 4,0 v-7"/><path d="M7,8 v11"/><path d="M14,1 c-2,0 -3,3 -3,6 v3 h3 v9"/></g>
+  <text class="sans ink" x="90" y="193" font-size="14" font-weight="600">Meals</text>
+  <rect class="bar" x="150" y="185" width="80" height="6" rx="3"/><rect class="bar2" x="150" y="196" width="66" height="5" rx="2.5"/><rect class="bar2" x="272" y="188" width="30" height="6" rx="3"/>
+  <g class="g" transform="translate(58,217) scale(0.9)"><path d="M2,12 l6,-1 5,-8 h2 l-2,8 5,0 2,-2 h1 l-1,4 1,4 h-1 l-2,-2 -5,0 2,8 h-2 l-5,-8 -6,-1 z"/></g>
+  <text class="sans ink" x="90" y="231" font-size="14" font-weight="600">Flights</text>
+  <rect class="bar" x="150" y="223" width="98" height="6" rx="3"/><rect class="bar2" x="150" y="234" width="54" height="5" rx="2.5"/><rect class="bar2" x="272" y="226" width="30" height="6" rx="3"/>
+  <g class="g" transform="translate(58,255) scale(0.9)"><path d="M1,17 v-8 h18 v8"/><path d="M1,13 h18"/><path d="M3,9 v-3 h5 v3"/><path d="M1,17 v2"/><path d="M19,17 v2"/></g>
+  <text class="sans ink" x="90" y="269" font-size="14" font-weight="600">Hotels</text>
+  <rect class="bar" x="150" y="261" width="86" height="6" rx="3"/><rect class="bar2" x="150" y="272" width="70" height="5" rx="2.5"/><rect class="bar2" x="272" y="264" width="30" height="6" rx="3"/>
+  <g class="g" transform="translate(58,293) scale(0.9)"><rect x="3" y="1" width="14" height="14" rx="3"/><path d="M3,9 h14"/><circle cx="7" cy="12" r="1"/><circle cx="13" cy="12" r="1"/><path d="M5,15 l-2,4"/><path d="M15,15 l2,4"/></g>
+  <text class="sans ink" x="90" y="307" font-size="14" font-weight="600">Transit</text>
+  <rect class="bar" x="150" y="299" width="74" height="6" rx="3"/><rect class="bar2" x="150" y="310" width="58" height="5" rx="2.5"/><rect class="bar2" x="272" y="302" width="30" height="6" rx="3"/>
+  <g class="g" transform="translate(58,331) scale(0.9)"><path d="M1,7 a13,13 0 0 1 18,0"/><path d="M4,10.5 a9,9 0 0 1 12,0"/><path d="M7,14 a5,5 0 0 1 6,0"/><circle cx="10" cy="17" r="1"/></g>
+  <text class="sans ink" x="90" y="345" font-size="14" font-weight="600">Wi-Fi</text>
+  <rect class="bar" x="150" y="337" width="90" height="6" rx="3"/><rect class="bar2" x="150" y="348" width="48" height="5" rx="2.5"/><rect class="bar2" x="272" y="340" width="30" height="6" rx="3"/>
+  <g class="g-muted" transform="translate(58,369) scale(0.9)"><circle cx="4" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/></g>
+  <text class="sans faint" x="90" y="383" font-size="14" font-weight="600">and more</text>
+  <rect class="bar" x="150" y="375" width="70" height="6" rx="3"/>
+  <g class="feed">
+    <path d="M320,151 C 372,151 384,196 432,196"/>
+    <path d="M320,189 C 372,189 384,196 432,196"/>
+    <path d="M320,227 C 372,227 384,196 432,196"/>
+    <path d="M320,265 C 372,265 384,196 432,196"/>
+    <path d="M320,303 C 372,303 384,196 432,196"/>
+    <path d="M320,341 C 372,341 384,196 432,196"/>
+    <path d="M320,379 C 372,379 384,196 432,196"/>
+  </g>
+  <rect class="panel" x="386" y="90" width="250" height="236" rx="10" filter="url(#soft)"/>
+  <g class="g" transform="translate(404,106) scale(0.85)"><rect x="1" y="3" width="18" height="16" rx="2"/><path d="M1,8 h18 M6,1 v4 M14,1 v4"/></g>
+  <text class="sans ink" x="428" y="120" font-size="15" font-weight="700">Calendar</text>
+  <text class="sans muted" x="618" y="120" font-size="11" font-weight="500" text-anchor="end">trip dates</text>
+  <g class="sans faint" font-size="9" font-weight="600" text-anchor="middle"><text x="415" y="141">S</text><text x="447" y="141">M</text><text x="479" y="141">T</text><text x="511" y="141">W</text><text x="543" y="141">T</text><text x="575" y="141">F</text><text x="607" y="141">S</text></g>
+  <g class="cell">
+    <rect x="400" y="148" width="30" height="28" rx="3"/><rect x="432" y="148" width="30" height="28" rx="3"/><rect x="464" y="148" width="30" height="28" rx="3"/><rect x="496" y="148" width="30" height="28" rx="3"/><rect x="528" y="148" width="30" height="28" rx="3"/><rect x="560" y="148" width="30" height="28" rx="3"/><rect x="592" y="148" width="30" height="28" rx="3"/>
+    <rect x="400" y="180" width="30" height="28" rx="3"/><rect x="592" y="180" width="30" height="28" rx="3"/>
+    <rect x="400" y="212" width="30" height="28" rx="3"/><rect x="432" y="212" width="30" height="28" rx="3"/><rect x="464" y="212" width="30" height="28" rx="3"/><rect x="496" y="212" width="30" height="28" rx="3"/><rect x="528" y="212" width="30" height="28" rx="3"/><rect x="560" y="212" width="30" height="28" rx="3"/><rect x="592" y="212" width="30" height="28" rx="3"/>
+    <rect x="400" y="244" width="30" height="28" rx="3"/><rect x="432" y="244" width="30" height="28" rx="3"/><rect x="464" y="244" width="30" height="28" rx="3"/><rect x="496" y="244" width="30" height="28" rx="3"/><rect x="528" y="244" width="30" height="28" rx="3"/><rect x="560" y="244" width="30" height="28" rx="3"/><rect x="592" y="244" width="30" height="28" rx="3"/>
+    <rect x="400" y="276" width="30" height="28" rx="3"/><rect x="432" y="276" width="30" height="28" rx="3"/><rect x="464" y="276" width="30" height="28" rx="3"/><rect x="496" y="276" width="30" height="28" rx="3"/><rect x="528" y="276" width="30" height="28" rx="3"/><rect x="560" y="276" width="30" height="28" rx="3"/><rect x="592" y="276" width="30" height="28" rx="3"/>
+  </g>
+  <rect class="range" x="432" y="180" width="158" height="28" rx="4"/>
+  <g class="accent"><circle cx="447" cy="200" r="2"/><circle cx="479" cy="200" r="2"/><circle cx="511" cy="200" r="2"/><circle cx="543" cy="200" r="2"/><circle cx="575" cy="200" r="2"/></g>
+  <path class="hand" d="M636,196 H698" marker-end="url(#head)"/>
+  <circle class="accent" cx="666" cy="196" r="12"/>
+  <path class="mark" d="M659,201 L666,189 L673,201 L666,197 Z"/>
+  <text class="sans accent" x="666" y="226" font-size="11" font-weight="700" text-anchor="middle">Boomerang</text>
+  <rect class="sheet-back" x="716" y="156" width="150" height="176" rx="3"/>
+  <rect class="sheet-back" x="710" y="150" width="150" height="176" rx="3"/>
+  <rect class="sheet" x="704" y="144" width="150" height="176" rx="3" filter="url(#soft)"/>
+  <text class="sans ink" x="718" y="168" font-size="13" font-weight="700">Summary</text>
+  <path class="inks" d="M718,176 h122" stroke-width="1" opacity="0.35"/>
+  <rect class="bar" x="718" y="188" width="66" height="5" rx="2.5"/><rect class="bar2" x="812" y="188" width="28" height="5" rx="2.5"/>
+  <rect class="bar" x="718" y="204" width="54" height="5" rx="2.5"/><rect class="bar2" x="812" y="204" width="28" height="5" rx="2.5"/>
+  <rect class="bar" x="718" y="220" width="74" height="5" rx="2.5"/><rect class="bar2" x="812" y="220" width="28" height="5" rx="2.5"/>
+  <rect class="bar" x="718" y="236" width="48" height="5" rx="2.5"/><rect class="bar2" x="812" y="236" width="28" height="5" rx="2.5"/>
+  <rect class="bar" x="718" y="252" width="62" height="5" rx="2.5"/><rect class="bar2" x="812" y="252" width="28" height="5" rx="2.5"/>
+  <rect class="bar" x="718" y="268" width="58" height="5" rx="2.5"/><rect class="bar2" x="812" y="268" width="28" height="5" rx="2.5"/>
+  <path class="inks" d="M718,288 h122" stroke-width="1.2"/>
+  <rect class="total" x="718" y="296" width="44" height="6" rx="3"/><rect class="total" x="804" y="296" width="36" height="6" rx="3"/>
+  <text class="sans ink" x="785" y="360" font-size="15" font-weight="700" text-anchor="middle">one PDF</text>
+  <text class="sans muted" x="785" y="377" font-size="11" font-weight="500" text-anchor="middle">summary page first, every receipt behind it</text>
+</svg>
