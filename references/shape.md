@@ -6,15 +6,15 @@ Three questions, asked of layer two, not a lookup table. The four heroes that ex
 
 - Many of one kind converge on one thing. Draw a hub with a fan: `kind: fan`.
 - One kind appearing twice, a before and an after of the same subject. Draw an axis of comparison: `kind: before-after`.
-- A few fixed parts of different kinds, none converging and none opposing. Draw them as distinct labelled nodes: not yet, ask the owner (the renderer does not draw this today).
-- One kind recurring over time, with something that persists across the recurrence. Draw a cycle feeding a static accumulator: not yet, ask the owner (the renderer does not draw this today).
+- A few fixed parts of different kinds, none converging and none opposing. Draw them as distinct labelled nodes: call this shape **topology**. Not yet, ask the owner; the renderer does not draw this today.
+- One kind recurring over time, with something that persists across the recurrence. Draw a cycle feeding a static accumulator: call this shape **conveyor**. Not yet, ask the owner; the renderer does not draw this today.
 
 ## Q2. What does the relationship do to the parts?
 
 - Merges them into one thing: draw a convergence, which is what `fan` renders.
 - Replaces one with a better version of itself: draw a diff, which is what `before-after` renders.
-- Constrains which may touch: draw edges, and draw a forbidden edge as visibly as an allowed one. This is the trust-topology shape the renderer does not draw; see the counter-lesson below for why it was rejected on the concept, not the shape.
-- Cycles one thing while conserving something out of it: draw the motion and the thing it drops off. Not yet, ask the owner.
+- Constrains which may touch: draw edges, and draw a forbidden edge as visibly as an allowed one. This is **topology** again; see the counter-lesson below for a case where a topology-shaped concept was rejected outright rather than merely unbuilt.
+- Cycles one thing while conserving something out of it: draw the motion and the thing it drops off. This is **conveyor** again. Not yet, ask the owner.
 
 ## Q3. Where does the surprise live?
 
@@ -28,8 +28,8 @@ For pierless the surprise lived in the source: not an arrow labelled "merge", bu
 | --- | --- | --- |
 | many of one kind | merge into one thing | `fan` |
 | one kind, twice | replace with a better version | `before-after` |
-| a few kinds, fixed | constrained edges | not yet, ask the owner |
-| one kind, recurring | cycle plus accumulator | not yet, ask the owner |
+| a few kinds, fixed | constrained edges | **topology**, not yet, ask the owner |
+| one kind, recurring | cycle plus accumulator | **conveyor**, not yet, ask the owner |
 
 Only `fan` and `before-after` exist in the renderer today. If the three questions point somewhere else, say so to the owner and stop rather than force the concept into the nearest shape that renders.
 
@@ -37,7 +37,7 @@ Only `fan` and `before-after` exist in the renderer today. If the three question
 
 If an engineer would sketch the same picture to explain the architecture to another engineer, it is mechanism, and it belongs below the fold no matter how true, clever or hard-won the fact is. Mermaid already owns that register; nicer icons on the same layout do not change what kind of picture it is.
 
-The three-way trust topology considered for pierless was correct, interesting, and rejected for exactly this reason: three nodes, forbidden edges, arrows between components. It read as a data-flow diagram regardless of how well it matched the mechanism. Q1 and Q2 both pointed at "constrained edges", and the shape was still wrong, because the litmus test overrides the questions: mechanism informs the drawing, it is never the drawing's subject.
+The three-way trust **topology** considered for pierless was correct, interesting, and rejected for exactly this reason: three nodes, forbidden edges, arrows between components. It read as a data-flow diagram regardless of how well it matched the mechanism. Q1 and Q2 both pointed at "constrained edges", and the shape was still wrong, because the litmus test overrides the questions: mechanism informs the drawing, it is never the drawing's subject. A **topology** is not disqualified in general by this one case; it is disqualified whenever it reads as an architecture sketch, which a topology of components very often will.
 
 ## The counter-lesson: the fan is not owned by boomerang
 
