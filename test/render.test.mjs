@@ -9,6 +9,19 @@ import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { render } from "../scripts/figurehead.mjs";
 import { ICONS } from "../scripts/icons.mjs";
+import { esc } from "../scripts/components/esc.mjs";
+import { glyph, themedGlyph, rawGlyph } from "../scripts/components/glyphs.mjs";
+import { svgHead } from "../scripts/components/svg-shell.mjs";
+import { okBadge } from "../scripts/components/badges.mjs";
+import { flowCurve, ropeLink, grommet } from "../scripts/components/curves.mjs";
+import { stackedSheet } from "../scripts/components/sheets.mjs";
+import { flatCard, chartHandledCard } from "../scripts/components/cards.mjs";
+import { chip } from "../scripts/components/chip.mjs";
+import { chartHub, windowHandoffHub } from "../scripts/components/hub-disc.mjs";
+import { brandedText, chartHeadlineBlock, windowHeadlineBlock } from "../scripts/components/headline.mjs";
+import { panelWithChrome } from "../scripts/components/panel.mjs";
+import { listRow } from "../scripts/components/list-rows.mjs";
+import { calendarGrid } from "../scripts/components/calendar.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const examplesDir = resolve(root, "examples");
@@ -388,6 +401,56 @@ test("the Lucide licence notice is present in both the icon table and its doc", 
     assert.match(text, /lucide\.dev\/license/, `${label} is missing the licence link`);
   }
 });
+
+// Component modules (scripts/components/*.mjs): step one of the renderer's own refactor
+// (components-plan.md) moved the shared drawing primitives out of the three style functions
+// into small pure functions here, each taking explicit props and returning an SVG string (or
+// an array of them, for the ones that build up several lines). The golden tests above already
+// prove these produce byte-identical output for the real specs; this only proves each module
+// is independently importable and that, given a minimal set of props, it draws the root tag
+// its name promises.
+test("esc escapes the five XML-special characters", () => {
+  assert.equal(esc(`<a> & "b" 'c'`), "&lt;a&gt; &amp; &quot;b&quot; 'c'");
+});
+
+test("brandedText returns escaped text, or the brand word wrapped in a coloured tspan", () => {
+  assert.equal(brandedText("Plain text", null, "brass"), "Plain text");
+  assert.ok(brandedText("Hello World", "World", "brass").includes('<tspan class="brass">World</tspan>'));
+});
+
+const componentCases = [
+  { name: "glyph", fn: () => glyph("mail", 0, 0, 20), tag: "<g" },
+  { name: "themedGlyph", fn: () => themedGlyph("mail", 0, 0, 20, "i-navy"), tag: "<g" },
+  { name: "rawGlyph", fn: () => rawGlyph("mail", 0, 0, 20, 'fill="none"'), tag: "<g" },
+  { name: "svgHead", fn: () => svgHead({ width: 100, height: 100, title: "t" }).join("\n"), tag: "<svg" },
+  { name: "okBadge", fn: () => okBadge(0, 0), tag: "<g" },
+  { name: "flowCurve", fn: () => flowCurve({ x1: 0, y1: 0, c1x: 1, c1y: 1, c2x: 2, c2y: 2, x2: 3, y2: 3 }), tag: "<path" },
+  { name: "ropeLink", fn: () => ropeLink({ x1: 0, y1: 0, c1x: 1, c1y: 1, c2x: 2, c2y: 2, x2: 3, y2: 3 }), tag: "<path" },
+  { name: "grommet", fn: () => grommet(0, 0), tag: "<circle" },
+  {
+    name: "stackedSheet",
+    fn: () => stackedSheet({ x: 0, y: 0, w: 10, h: 10, rx: 1, back2: { dx: 2, dy: 2, cls: "a" }, back1: { dx: 1, dy: 1, cls: "a" }, frontClass: "b" }).join("\n"),
+    tag: "<rect",
+  },
+  { name: "flatCard", fn: () => flatCard({ x: 0, y: 0, icon: "mail", label: "L" }).join("\n"), tag: "<g" },
+  { name: "chartHandledCard", fn: () => chartHandledCard({ cx: 0, cy: 0, w: 10, h: 10, tilt: 0, theme: "navy", icon: "mail", label: "L" }).join("\n"), tag: "<g" },
+  { name: "chip", fn: () => chip({ x: 0, y: 0, icon: "mail", label: "L" }), tag: "<g" },
+  { name: "chartHub", fn: () => chartHub({ cx: 0, cy: 0, r: 10, ring: 12, icon: "mail", label: "L" }).join("\n"), tag: "<g" },
+  { name: "windowHandoffHub", fn: () => windowHandoffHub({ calRight: 0, arrowY: 0, label: "L" }).join("\n"), tag: "<path" },
+  { name: "chartHeadlineBlock", fn: () => chartHeadlineBlock({ headline: "L", subhead: "S" }).join("\n"), tag: "<text" },
+  { name: "windowHeadlineBlock", fn: () => windowHeadlineBlock({ headline: "L", subhead: "S" }).join("\n"), tag: "<text" },
+  { name: "panelWithChrome", fn: () => panelWithChrome({ x: 0, y: 0, w: 10, h: 10, iconGlyph: "<rect/>", labelX: 0, label: "L" }).join("\n"), tag: "<rect" },
+  { name: "listRow", fn: () => listRow({ x: 0, top: 0, icon: "mail", label: "L", w1: 1, w2: 1, rightX: 10 }).join("\n"), tag: "<g" },
+  { name: "calendarGrid", fn: () => calendarGrid({ x: 0, top: 0 }).join("\n"), tag: "<g" },
+];
+
+for (const { name, fn, tag } of componentCases) {
+  test(`the ${name} component returns a string with its root tag for a minimal props object`, () => {
+    const out = fn();
+    assert.equal(typeof out, "string");
+    assert.ok(out.includes(tag), `expected ${name}'s output to include "${tag}", got: ${out}`);
+  });
+}
 
 // End-to-end: actually spawns `node scripts/figurehead.mjs check`, the way a real caller would, rather than
 // calling an imported function. This is what caught the module ever having deadlocked on Node's own top-level
