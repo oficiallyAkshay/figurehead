@@ -36,11 +36,12 @@ Apply this before showing the statement to the owner. A statement that survives 
 
 Each statement below is read off the project's own committed hero, not invented for this file. The citation after each line names where to check it.
 
-**boomerang**
+**tidy-inbox**
 
-- Outcome: "one PDF: summary page, then every receipt" (`examples/boomerang/reference.svg`).
-- Parts, the handled items the reference hero draws: Rides, Meals, Flights, Hotels, Transit, Wi-Fi, and more (`examples/boomerang/reference.svg`).
-- Deeper: not pushed in this golden. Every handled item sits at the same depth; the reference draws a fan, not one item singled out further.
+- Sources: Inbox, gives "receipts"; Calendar, gives "trip dates" (`examples/tidy-inbox/tidy-inbox.hero.json`, `sources`).
+- Outcome, the deliverable: "one claim" (heading "Summary"), backed by "receipts behind the summary" (`examples/tidy-inbox/tidy-inbox.hero.json`, `deliverable`).
+- Parts, the handled items the hero draws: Rides, Meals, Flights, Hotels, Transit, Wi-Fi, and more (`examples/tidy-inbox/tidy-inbox.hero.json`, `handled`).
+- Deeper: not pushed in this golden. Every handled item sits at the same depth; the hero draws a fan, not one item singled out further.
 
 **readmerlin**
 
