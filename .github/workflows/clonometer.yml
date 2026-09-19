@@ -1,0 +1,18 @@
+# GitHub keeps clone traffic for fourteen days. clonometer reads it daily and
+# keeps a lifetime ledger on the badges branch, which the README badge reads.
+# GitHub disables a scheduled workflow on a public repository after 60 days
+# with no commit; any commit on any branch resets that clock.
+name: clonometer
+on:
+  schedule: [{cron: "23 3 * * *"}]
+  workflow_dispatch:
+permissions: {}
+concurrency: {group: clonometer}
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: oficiallyAkshay/clonometer@2c82a8779a68d2babb1e5e856d2ae69253dcd611 # pinned commit
+        with:
+          token: ${{ secrets.TRAFFIC_TOKEN }}
