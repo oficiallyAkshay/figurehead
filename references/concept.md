@@ -34,26 +34,29 @@ Apply this before showing the statement to the owner. A statement that survives 
 
 ## Four worked statements
 
+Each statement below is read off the project's own committed hero, not invented for this file. The citation after each line names where to check it.
+
 **boomerang**
 
-- Outcome: a Mac that already has what you use, restored without you touching it again.
-- Parts: capture what's installed, replay it on a new machine, keep the list current as you add things.
-- Deeper: the replay step, because that's the part a reader doubts.
+- Outcome: "one PDF: summary page, then every receipt" (`examples/boomerang/reference.svg`).
+- Parts, the handled items the reference hero draws: Rides, Meals, Flights, Hotels, Transit, Wi-Fi, and more (`examples/boomerang/reference.svg`).
+- Deeper: not pushed in this golden. Every handled item sits at the same depth; the reference draws a fan, not one item singled out further.
 
 **readmerlin**
 
-- Outcome: a README people finish, checked so it stays true.
-- Parts: gather what the repo already says, draw the hero from the reader's chair, write six sections in a fixed order, check the page on every push.
-- Deeper: the check, because "checked on every push" is the claim a skeptical reader wants proof of.
+- Outcome: "The README people finish" (`examples/readmerlin/readmerlin.hero.json`, `after.label`).
+- What it replaces, the before: "Ten seconds end here" (fold), "Code before value" (code), "A stale badge" (badge), "A dead link" (link) (`examples/readmerlin/readmerlin.hero.json`, `before.problems`).
+- Parts, the after: "What they get, first" (tagline), "One picture" (picture), "Badges that are true" (badges), "Features at a glance" (features) (`examples/readmerlin/readmerlin.hero.json`, `after.parts`).
+- Deeper: the after itself, drawn part for part against the before rather than collapsed into one checkmark.
 
 **clonometer**
 
-- Outcome: an install count that never loses a day, however traffic is undercounted.
-- Parts: a belt of workflows that runs on a schedule, a ledger that never overwrites what it already knows, a badge that reads straight from the ledger.
-- Deeper: the ledger, because "never loses a day" is the one claim readers have been burned by before.
+- Outcome: "a count that never loses a day" (this is the handoff's own example outcome for clonometer, `FIGUREHEAD-HANDOFF.md`, the outcome layer's list of examples).
+- Parts, the one metaphor the clonometer hero landed on, nothing more: the fourteen-day window, new boxes entering on the right; the belt that drops the oldest day off the left; the all-time total that catches the number it drops (`_handoff/HEROFOLD-ITEMS.md`, "what the clonometer hero taught").
+- Deeper: not pushed past layer two. The window, the drop and the total are the whole accepted picture.
 
 **pierless**
 
-- Outcome: a merge that deploys itself, with no server left half-updated and no pager going off for nothing.
-- Parts: deploys the moment you merge, fixes itself when a deploy sticks or a daemon drops, reinstalls only what changed, stays quiet unless something is actually red.
-- Deeper: the source, drawn as a real green "Merge pull request" button rather than a labelled arrow, because that one object is what makes the reader believe the rest is automatic.
+- Outcome: "Merge it. Pierless takes it from there." (`examples/pierless/pierless.hero.json`, `headline`).
+- Parts, the four handled cards, quoted exactly: "Deploys instantly / the moment you merge", "Fixes itself / stuck deploys, dropped daemons", "Only what changed / never a full reinstall", "Stays quiet / alerts only when something's red" (`examples/pierless/pierless.hero.json`, `handled`).
+- Deeper: the source, drawn as a real green "Merge pull request" button rather than a labelled arrow (`examples/pierless/pierless.hero.json`, `source`), because that one object is what makes the reader believe the rest is automatic.
