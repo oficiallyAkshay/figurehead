@@ -34,7 +34,7 @@ One JSON file beside the SVG, named `<name>.hero.json`. `readmerlin check` alrea
 
 ```
 kind        "fan" | "before-after"            default "fan" when absent
-style       "flat" | "chart"                  default "flat"
+style       "chart" | "flat"                  chosen for every hero; the skill picks a world and never leaves it absent. "flat" exists so readmerlin's goldens do not move; the renderer still treats an absent style as flat, and check warns on it
 title       string                            required; becomes the SVG title and alt text
 headline    string                            optional; chart draws it as the editorial line, brand word in brand colour
 subhead     string                            optional; chart draws it under the headline
