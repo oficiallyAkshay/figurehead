@@ -172,6 +172,82 @@ test("spec/shape does not apply the chart-only rules to a flat spec (unchanged)"
 });
 
 // ---------------------------------------------------------------------------
+// spec/shape — style "window" (a third style being added to the renderer
+// concurrently in a separate, in-progress PR this builder does not depend on)
+// ---------------------------------------------------------------------------
+
+// Two app-surface sources, a hub, a deliverable, and seven handled items with
+// "more" — the shape window's own layout needs, per the owner's brief.
+const validWindowSpec = {
+  kind: "fan",
+  style: "window",
+  title: "Two inboxes, one packet",
+  headline: "Two inboxes become one packet",
+  sources: [
+    { label: "Support inbox", icon: "mail" },
+    { label: "Calendar", icon: "calendar" },
+  ],
+  hub: { label: "Packet", icon: "target" },
+  deliverable: { label: "Weekly report", kind: "document" },
+  handled: [
+    { label: "Triaged", icon: "mail" },
+    { label: "Scheduled", icon: "calendar" },
+    { label: "Verified", icon: "badge-check" },
+    { label: "Archived", icon: "archive" },
+    { label: "Locked down", icon: "lock" },
+    { label: "Alerted", icon: "bell" },
+    { label: "Linked", icon: "link" },
+  ],
+  more: true,
+};
+
+test('spec/shape accepts "window" as a style value and has no fails for a well-formed window spec', () => {
+  assert.deepEqual(fails(_internal.checkSpecShape(validWindowSpec)), []);
+});
+
+test('spec/shape fails a window spec whose "sources" does not have exactly two entries', () => {
+  const spec = { ...validWindowSpec, sources: [validWindowSpec.sources[0]] };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /^"sources" must have exactly two entries when "style" is "window"/.test(f.message)));
+});
+
+test('spec/shape fails a window spec with three "sources" too (still not exactly two)', () => {
+  const spec = { ...validWindowSpec, sources: [...validWindowSpec.sources, { label: "Docs", icon: "folder" }] };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /^"sources" must have exactly two entries when "style" is "window"/.test(f.message)));
+});
+
+test('spec/shape fails a window spec with no "hub"', () => {
+  const { hub, ...spec } = validWindowSpec;
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /^A window spec needs "hub"/.test(f.message)));
+});
+
+test('spec/shape fails a window spec with no "deliverable"', () => {
+  const { deliverable, ...spec } = validWindowSpec;
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /^A window spec needs "deliverable"/.test(f.message)));
+});
+
+test('spec/shape fails a window spec that also sets "source"', () => {
+  const spec = { ...validWindowSpec, source: { label: "Just one", icon: "mail" } };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /^"source" is not allowed when "style" is "window"/.test(f.message)));
+});
+
+test('spec/shape fails a window spec that also sets "aside"', () => {
+  const spec = { ...validWindowSpec, aside: "a handwritten note" };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /^"aside" is not allowed when "style" is "window"/.test(f.message)));
+});
+
+test('spec/shape fails a window spec whose handled item sets a "theme"', () => {
+  const spec = { ...validWindowSpec, handled: [{ ...validWindowSpec.handled[0], theme: "navy" }, ...validWindowSpec.handled.slice(1)] };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /^"handled\[0\]\.theme" is not allowed when "style" is "window"/.test(f.message)));
+});
+
+// ---------------------------------------------------------------------------
 // icons/known
 // ---------------------------------------------------------------------------
 
@@ -270,6 +346,46 @@ test("text/fits fails when a chart subhead is too long for its 740px room", () =
   assert.equal(findings.length, 1);
   assert.match(findings[0].message, /the chart subhead/);
   assert.match(findings[0].message, /does not fit the 740px room/);
+});
+
+test("text/fits passes for a short window headline and short inbox row labels", () => {
+  const widths = _internal.loadWidths();
+  const spec = {
+    kind: "fan",
+    style: "window",
+    headline: "One packet",
+    handled: [
+      { label: "Triaged", icon: "mail" },
+      { label: "Scheduled", icon: "calendar" },
+    ],
+  };
+  assert.deepEqual(fails(_internal.checkTextFits(spec, widths)), []);
+});
+
+test("text/fits fails when a window headline is too long for its 820px room (approximated from sans-600-19 scaled by 25/19)", () => {
+  const widths = _internal.loadWidths();
+  const spec = {
+    kind: "fan",
+    style: "window",
+    headline:
+      "This window headline is written deliberately long so that, once its sans-600-19 advance is measured and scaled up by twenty five over nineteen to approximate the real twenty five pixel size, it will not fit the eight hundred twenty pixel room the window canvas gives it, not even close to fitting",
+  };
+  const findings = fails(_internal.checkTextFits(spec, widths));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /the window headline/);
+  assert.match(findings[0].message, /does not fit the 820px room/);
+});
+
+test('text/fits warns, but does not fail, a window inbox row label since "sans-600-14" is not a measured face', () => {
+  const widths = _internal.loadWidths();
+  const spec = {
+    kind: "fan",
+    style: "window",
+    handled: [{ label: "Triaged", icon: "mail" }],
+  };
+  const findings = _internal.checkTextFits(spec, widths);
+  assert.deepEqual(fails(findings), []);
+  assert.ok(findings.some((f) => f.level === "warn" && /No measured face "sans-600-14"/.test(f.message)));
 });
 
 test("text/fits fails when a before-after label is too long for its 180px room", () => {
