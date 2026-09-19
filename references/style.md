@@ -17,7 +17,7 @@ Use `chart` when the product's own world is a harbour or the sea: a pier, an anc
 Work through these in order, before reaching for a style.
 
 1. The world is the product's own architecture, seen from the reader's chair. Test it by pointing: the reader must be able to point at every real component in the picture and name what it is. A genre the nouns suggest, a metaphor the name suggests, or an adjacent profession each draws a different product's picture, not this one.
-2. A name gives a world only when its pun is the mechanism itself: pierless has no port, and that absence is the architecture, so a harbour is the world. When a name instead describes the outcome, the way boomerang describes something coming back, drawing that name is a gimmick, not a world.
+2. A name gives a world only when its pun is the mechanism itself: pierless has no port, and that absence is the architecture, so a harbour is the world. When a name instead describes the outcome, the way a product named for the thing it sends back describes something coming back, drawing that name is a gimmick, not a world.
 3. Themed does not mean textured. A software product's world is software itself: real interface surfaces, one accent colour, alignment, whitespace. A physical world earns a physical scene; a software world does not need one built for it. Whimsy is one register a world can take, not what makes something a theme.
 4. The feel words the owner gives, for the receipts tool: efficiency, structure, time back and freedom, are constraints to check the concept statement against, not decoration added once a world has already been picked.
 5. Work in this order: the architecture first, then the feel words, then the world, then the style.
