@@ -217,6 +217,22 @@ function checkSpecShape(spec) {
         fail(`"deliverable.kind" is "${spec.deliverable.kind}", not one of ${DELIVERABLE_KIND_VALUES.join(", ")}.`, `Set "deliverable.kind" to one of ${DELIVERABLE_KIND_VALUES.join(", ")}.`);
       }
     }
+
+    // Chart draws exactly one source button and a hub; it has no layout for
+    // more than one source or for the flat style's document/table
+    // deliverable, and no layout at all without a hub. Flat is unaffected.
+    if (spec.style === "chart") {
+      const CHART_NOTE = 'chart draws one source and a hub; use "source" and "hub", or style flat';
+      if (spec.sources !== undefined) {
+        fail(`"sources" is not allowed when "style" is "chart": ${CHART_NOTE}.`, 'Replace "sources" with a single "source" object, or remove "style" to keep flat.');
+      }
+      if (spec.deliverable !== undefined) {
+        fail(`"deliverable" is not allowed when "style" is "chart": ${CHART_NOTE}.`, 'Remove "deliverable", or remove "style" to keep flat.');
+      }
+      if (spec.hub === undefined) {
+        fail(`A chart spec needs "hub": ${CHART_NOTE}.`, 'Add a "hub" object with "label" and "icon".');
+      }
+    }
   }
 
   return findings;
