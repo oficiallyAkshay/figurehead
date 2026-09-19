@@ -43,11 +43,16 @@ test("spec/shape fails for pierless's committed spec (style, and unknown fields)
   assert.ok(findings.some((f) => /"ring"/.test(f.message)));
 });
 
-test("spec/shape fails a spec missing kind, title and handled", () => {
+test("spec/shape fails a spec missing title and handled, but not a missing kind", () => {
   const findings = fails(_internal.checkSpecShape({ source: { label: "a", icon: "mail" } }));
-  assert.ok(findings.some((f) => /"kind"/.test(f.message)));
+  assert.ok(!findings.some((f) => /"kind"/.test(f.message)), "an absent kind defaults to fan and should not fail");
   assert.ok(findings.some((f) => /"title"/.test(f.message)));
   assert.ok(findings.some((f) => /"handled"/.test(f.message)));
+});
+
+test("spec/shape fails an invalid, present kind", () => {
+  const findings = fails(_internal.checkSpecShape({ kind: "sideways", title: "t" }));
+  assert.ok(findings.some((f) => /"kind" is "sideways"/.test(f.message)));
 });
 
 test("spec/shape fails handled outside three to nine items and a bad theme", () => {
@@ -262,10 +267,9 @@ test("check() returns no findings for the readmerlin golden pair", async () => {
   assert.deepEqual(findings, []);
 });
 
-test("check() surfaces tidy-inbox's missing kind field", async () => {
+test("check() returns no findings for the tidy-inbox golden pair (kind absent, defaults to fan)", async () => {
   const findings = await check(tidyInboxSpec, tidyInboxSvg);
-  assert.equal(fails(findings).length, 1);
-  assert.equal(findings[0].id, "spec/shape");
+  assert.deepEqual(findings, []);
 });
 
 test("CLI exits 0 and prints nothing for a passing pair", () => {
@@ -275,11 +279,13 @@ test("CLI exits 0 and prints nothing for a passing pair", () => {
 });
 
 test("CLI exits 1 and prints tab-separated findings for a failing pair", () => {
-  const res = spawnSync("node", ["scripts/check.mjs", "examples/tidy-inbox/tidy-inbox.hero.json", "examples/tidy-inbox/tidy-inbox.svg"], { cwd: root, encoding: "utf8" });
+  // pierless's committed spec predates the contract's field list (see the PR
+  // body), so it is a real failing pair, not one built just for this test.
+  const res = spawnSync("node", ["scripts/check.mjs", "examples/pierless/pierless.hero.json", "examples/pierless/reference.svg"], { cwd: root, encoding: "utf8" });
   assert.equal(res.status, 1);
   const lines = res.stdout.trim().split("\n");
-  assert.equal(lines.length, 1);
-  assert.equal(lines[0].split("\t").length, 4);
+  assert.ok(lines.length >= 1);
+  for (const line of lines) assert.equal(line.split("\t").length, 4);
   assert.match(lines[0], /^spec\/shape\tfail\t/);
 });
 
