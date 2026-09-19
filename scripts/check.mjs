@@ -509,6 +509,27 @@ function collectReaderNouns(repoDir) {
   return nouns;
 }
 
+// The strings this check looks at, minus "gives" and "with": those two hold
+// the verb or short phrase drawn on a fan/before-after arrow ("gives", e.g.
+// sources[i].gives; "with", e.g. by.with), not a name for any part of the
+// product, so they are exempt from "does this collide with a real file,
+// folder, export or function name" the way a hub, source or handled label is
+// not. figurehead.mjs's own labels(spec) export (used by spec/agrees, which
+// legitimately wants "gives"/"with" text present in the SVG) does not keep
+// which key a string came from, so this mirrors its walk here rather than
+// filtering its output, to filter by key rather than by value.
+function collectReaderNounLabels(spec) {
+  const out = [];
+  const keys = ["title", "label", "heading", "backing", "sub", "note", "headline", "subhead", "aside"];
+  const walk = (v, key) => {
+    if (typeof v === "string") return void (keys.includes(key) && v.trim() && out.push(v.trim()));
+    if (Array.isArray(v)) return v.forEach((x) => walk(x, key));
+    if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walk(x, k);
+  };
+  walk(spec, "");
+  return out;
+}
+
 function checkReaderNouns(spec, repoDir) {
   const F = mkF("register/reader-nouns");
   const findings = [];
@@ -521,12 +542,12 @@ function checkReaderNouns(spec, repoDir) {
   // folder or package name), and any label that equals the checked repo
   // directory's own basename is the same case by the same reasoning. Every
   // other label — source, sources, handled, deliverable, before/by/after —
-  // stays checked.
+  // stays checked, except "gives" and "with" (see collectReaderNounLabels).
   const hubLabel = isPlainObject(spec.hub) && typeof spec.hub.label === "string" ? spec.hub.label.trim().toLowerCase() : null;
   const repoName = path.basename(path.resolve(repoDir)).toLowerCase();
 
   const seen = new Set();
-  for (const label of labels(spec)) {
+  for (const label of collectReaderNounLabels(spec)) {
     if (typeof label !== "string") continue;
     const key = label.trim().toLowerCase();
     if (!key || seen.has(key)) continue;
