@@ -1,0 +1,80 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A second push to a pull request supersedes the first, so cancel the run it
+# replaced. Pushes to main are never cancelled.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Everything that reads the tree without running the suite: secrets over the
+  # whole history, workflow lint, and a syntax pass over every script.
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: secrets scan
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: workflow lint
+        uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
+        with:
+          version: "1.7.12"
+          files: ".github/workflows/*.yml"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - name: every script parses
+        run: for f in scripts/*.mjs; do node --check "$f"; done
+
+  # The declared floor and the newest release. There is nothing to install:
+  # the skill has no dependencies, so there is no npm ci and no lockfile.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node }}
+      # The goldens live inside the suite: every example is rendered from its
+      # spec and compared byte for byte, so drift fails here.
+      - run: npm test
+
+  # The one context the branch ruleset requires.
+  ci:
+    needs: [checks, test]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: gate
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: ${RESULTS}"
+          for result in ${RESULTS}; do
+            if [ "${result}" != "success" ]; then
+              echo "a required job did not succeed" >&2
+              exit 1
+            fi
+          done
