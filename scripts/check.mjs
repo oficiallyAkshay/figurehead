@@ -58,7 +58,7 @@ function measureLabel(faces, faceKey, text) {
 // ---------------------------------------------------------------------------
 
 const KIND_VALUES = ["fan", "before-after"];
-const STYLE_VALUES = ["flat", "chart"];
+const STYLE_VALUES = ["flat", "chart", "window"];
 const THEME_VALUES = ["navy", "sea", "ochre", "plum"];
 const DELIVERABLE_KIND_VALUES = ["document", "table"];
 
@@ -245,6 +245,37 @@ function checkSpecShape(spec) {
         fail(`A chart spec needs "hub": ${CHART_NOTE}.`, 'Add a "hub" object with "label" and "icon".');
       }
     }
+
+    // Window draws exactly two app-surface windows and a packet dropping
+    // into a deliverable tray; it has no layout for a single source, no
+    // handwritten aside, and no per-item accent theme, and it needs both a
+    // hub and a deliverable to draw the packet and the tray. Flat and chart
+    // are unaffected.
+    if (spec.style === "window") {
+      const WINDOW_NOTE = "window draws two app surfaces and a packet; use sources, hub and deliverable";
+      if (!Array.isArray(spec.sources) || spec.sources.length !== 2) {
+        fail(`"sources" must have exactly two entries when "style" is "window": ${WINDOW_NOTE}.`, 'Give "sources" exactly two items, one per app surface.');
+      }
+      if (spec.hub === undefined) {
+        fail(`A window spec needs "hub": ${WINDOW_NOTE}.`, 'Add a "hub" object with "label" and "icon".');
+      }
+      if (spec.deliverable === undefined) {
+        fail(`A window spec needs "deliverable": ${WINDOW_NOTE}.`, 'Add a "deliverable" object with "label" and "kind".');
+      }
+      if (spec.source !== undefined) {
+        fail(`"source" is not allowed when "style" is "window": ${WINDOW_NOTE}.`, 'Replace "source" with "sources" (exactly two items), or remove "style" to keep flat.');
+      }
+      if (spec.aside !== undefined) {
+        fail(`"aside" is not allowed when "style" is "window": ${WINDOW_NOTE}.`, 'Remove "aside", or remove "style" to keep flat.');
+      }
+      if (Array.isArray(spec.handled)) {
+        spec.handled.forEach((h, i) => {
+          if (isPlainObject(h) && h.theme !== undefined) {
+            fail(`"handled[${i}].theme" is not allowed when "style" is "window": ${WINDOW_NOTE}.`, `Remove "theme" from "handled[${i}]", or remove "style" to keep flat.`);
+          }
+        });
+      }
+    }
   }
 
   return findings;
@@ -317,7 +348,7 @@ function checkTextFits(spec, widths) {
   const F = mkF("text/fits");
   const findings = [];
   const faces = widths.faces;
-  const style = spec.style === "chart" ? "chart" : "flat";
+  const style = spec.style === "chart" ? "chart" : spec.style === "window" ? "window" : "flat";
 
   const check1 = (text, faceKey, room, where) => {
     if (text === undefined || text === null || text === "") return;
@@ -346,6 +377,35 @@ function checkTextFits(spec, widths) {
     check1(spec.subhead, "serif-italic-16", 740, "the chart subhead");
   }
 
+  if (style === "window") {
+    // The window headline is drawn at 25px, system-ui, weight 700 — a size
+    // scripts/widths.json has never measured (its sans stack tops out at
+    // "sans-600-19"). Rather than invent an unmeasured "sans-600-25" key,
+    // the closest measured face in the same family and weight is used and
+    // its summed advance scaled by 25/19: a font's per-character advance
+    // scales ~linearly with its point size, so this approximates the 25px
+    // width closely enough to compare against the window canvas's 820px
+    // room without needing a new browser measurement.
+    if (typeof spec.headline === "string" && spec.headline.trim()) {
+      const base = measureLabel(faces, "sans-600-19", spec.headline);
+      if (base === null) {
+        findings.push(F("warn", 'No measured face "sans-600-19" for the window headline; text/fits was skipped for it.', 'Add "sans-600-19" to scripts/widths.json.'));
+      } else {
+        const width = base * (25 / 19);
+        const withMargin = width * 1.1;
+        if (withMargin > 820) {
+          findings.push(
+            F(
+              "fail",
+              `the window headline "${spec.headline}" measures ${width.toFixed(1)}px (${withMargin.toFixed(1)}px with its ten percent margin), which does not fit the 820px room its card gives it.`,
+              "Shorten the headline, or make the card wider."
+            )
+          );
+        }
+      }
+    }
+  }
+
   if (spec.kind === "before-after") {
     for (const p of spec.before?.problems ?? []) check1(p?.label, "sans-600-15", 180, "a before.problems label");
     for (const p of spec.after?.parts ?? []) check1(p?.label, "sans-600-15", 180, "an after.parts label");
@@ -355,6 +415,11 @@ function checkTextFits(spec, widths) {
       if (style === "chart") {
         check1(h.label, "serif-700-19", 220, "a handled title");
         if (h.sub) check1(h.sub, "serif-italic-13.5", 220, "a handled sub");
+      } else if (style === "window") {
+        // Window draws each handled item as an inbox row: the label sits
+        // between the icon column (x 90) and the subject bar (x 150), a
+        // 60px room.
+        check1(h.label, "sans-600-14", 60, "a window inbox row label");
       } else {
         check1(h.label, "sans-600-17", 152, "a handled title");
       }
