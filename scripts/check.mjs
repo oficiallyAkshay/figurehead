@@ -359,14 +359,20 @@ function checkSpecAgrees(spec, svg) {
   };
   walkSub(spec);
 
+  // The renderer is free to split one label across more than one text node
+  // (pierless draws its two-line aside as two <text> elements, exactly like
+  // the hand-made reference). So every text node's content is collected,
+  // unescaped, and joined with single spaces into one whole-document string;
+  // a label only needs to appear as a substring of that whole, not within a
+  // single node.
   const blocks = [];
   const blockRe = /<title\b[^>]*>([\s\S]*?)<\/title>|<text\b[^>]*>([\s\S]*?)<\/text>/g;
   let m;
   while ((m = blockRe.exec(svg))) {
     const raw = (m[1] ?? m[2] ?? "").replace(/<[^>]*>/g, "");
-    blocks.push(collapseWs(unescapeXml(raw)));
+    blocks.push(unescapeXml(raw));
   }
-  const haystack = blocks.join(" • ");
+  const haystack = collapseWs(blocks.join(" "));
 
   for (const label of expected) {
     if (!haystack.includes(collapseWs(label))) {

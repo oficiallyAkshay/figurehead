@@ -3,7 +3,7 @@
 // one failing fixture (a small spec or SVG built here) — plus a couple of
 // full check() integration runs and a CLI exit-code check, per the checks
 // builder's brief.
-import { test } from "node:test";
+import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -20,9 +20,18 @@ const readmerlinSpec = readJson("examples/readmerlin/readmerlin.hero.json");
 const readmerlinSvg = readText("examples/readmerlin/readmerlin.svg");
 const tidyInboxSpec = readJson("examples/tidy-inbox/tidy-inbox.hero.json");
 const tidyInboxSvg = readText("examples/tidy-inbox/tidy-inbox.svg");
-const pierlessSpec = readJson("examples/pierless/pierless.hero.json");
 
 const fails = (findings) => findings.filter((f) => f.level === "fail");
+
+// A failing fixture that does not depend on any committed example staying
+// invalid: a copy of readmerlin's real (valid) spec, with an invalid "style"
+// and an unknown top-level "links" field added. Written to a temp file so the
+// CLI test can point the CLI at it, same as any other spec on disk.
+const badSpecDir = mkdtempSync(join(tmpdir(), "figurehead-badspec-"));
+const badSpec = { ...readmerlinSpec, style: "hand-inked", links: "twisted rope, tied through brass grommets" };
+const badSpecPath = join(badSpecDir, "bad.hero.json");
+writeFileSync(badSpecPath, JSON.stringify(badSpec, null, 2));
+after(() => rmSync(badSpecDir, { recursive: true, force: true }));
 
 // ---------------------------------------------------------------------------
 // spec/shape
@@ -32,15 +41,15 @@ test("spec/shape passes for readmerlin's real spec", () => {
   assert.deepEqual(_internal.checkSpecShape(readmerlinSpec), []);
 });
 
-test("spec/shape fails for pierless's committed spec (style, and unknown fields)", () => {
-  // pierless.hero.json predates the contract's field list: its "style" is not
-  // "flat"/"chart", it has a top-level "links" the contract does not document,
-  // and hub.ring is not a documented hub field. All three should be caught.
-  const findings = fails(_internal.checkSpecShape(pierlessSpec));
-  assert.ok(findings.length >= 3, `expected at least 3 fails, got ${findings.length}`);
+test("spec/shape fails a copy of readmerlin's spec with an invalid style and an unknown field", () => {
+  // Built inline rather than borrowed from a committed example: an example's
+  // spec can be normalised out from under a fixture that relies on it staying
+  // invalid (as happened when the renderer builder fixed pierless's spec).
+  const spec = JSON.parse(readFileSync(badSpecPath, "utf8"));
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.length >= 2, `expected at least 2 fails, got ${findings.length}`);
   assert.ok(findings.some((f) => /"style"/.test(f.message)));
   assert.ok(findings.some((f) => /"links"/.test(f.message)));
-  assert.ok(findings.some((f) => /"ring"/.test(f.message)));
 });
 
 test("spec/shape fails a spec missing title and handled, but not a missing kind", () => {
@@ -165,6 +174,29 @@ test("spec/agrees fails when a label is missing from the svg", () => {
   assert.match(findings[0].message, /Ten seconds end here/);
 });
 
+test("spec/agrees passes when a label is split across two <text> elements", () => {
+  // Matches how the renderer draws pierless's two-line aside: one label,
+  // "no pier, no port. it drops anchor itself.", as two separate <text> nodes.
+  const spec = { kind: "fan", title: "t", aside: "no pier, no port. it drops anchor itself.", source: { label: "a", icon: "mail" }, handled: [{ label: "a", icon: "mail" }, { label: "b", icon: "car" }, { label: "c", icon: "plane" }] };
+  const svg = [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1">',
+    '<title id="t1">t</title>',
+    '<text>a</text><text>b</text><text>c</text>',
+    '<text class="hand muted" x="1" y="1">no pier, no port.</text>',
+    '<text class="hand muted" x="1" y="2">it drops anchor itself.</text>',
+    "</svg>",
+  ].join("\n");
+  assert.deepEqual(_internal.checkSpecAgrees(spec, svg), []);
+});
+
+test("spec/agrees still fails when a label split across text elements is missing entirely", () => {
+  const spec = { kind: "fan", title: "t", aside: "no pier, no port. it drops anchor itself.", source: { label: "a", icon: "mail" }, handled: [{ label: "a", icon: "mail" }, { label: "b", icon: "car" }, { label: "c", icon: "plane" }] };
+  const svg = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1">', '<title id="t1">t</title>', '<text>a</text><text>b</text><text>c</text>', "</svg>"].join("\n");
+  const findings = fails(_internal.checkSpecAgrees(spec, svg));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /no pier, no port\. it drops anchor itself\./);
+});
+
 // ---------------------------------------------------------------------------
 // register/reader-nouns (only runs with --repo)
 // ---------------------------------------------------------------------------
@@ -279,9 +311,9 @@ test("CLI exits 0 and prints nothing for a passing pair", () => {
 });
 
 test("CLI exits 1 and prints tab-separated findings for a failing pair", () => {
-  // pierless's committed spec predates the contract's field list (see the PR
-  // body), so it is a real failing pair, not one built just for this test.
-  const res = spawnSync("node", ["scripts/check.mjs", "examples/pierless/pierless.hero.json", "examples/pierless/reference.svg"], { cwd: root, encoding: "utf8" });
+  // The same inline-built bad spec, checked against readmerlin's real SVG so
+  // only spec/shape (not spec/agrees) is expected to fail.
+  const res = spawnSync("node", ["scripts/check.mjs", badSpecPath, resolve(root, "examples/readmerlin/readmerlin.svg")], { cwd: root, encoding: "utf8" });
   assert.equal(res.status, 1);
   const lines = res.stdout.trim().split("\n");
   assert.ok(lines.length >= 1);
