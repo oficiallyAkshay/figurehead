@@ -33,7 +33,7 @@ One worktree and one branch per PR, created from the repo root: `git worktree ad
 One JSON file beside the SVG, named `<name>.hero.json`. `readmerlin check` already accepts that name. Fields:
 
 ```
-kind        "fan" | "before-after"            required
+kind        "fan" | "before-after"            default "fan" when absent
 style       "flat" | "chart"                  default "flat"
 title       string                            required; becomes the SVG title and alt text
 headline    string                            optional; chart draws it as the editorial line, brand word in brand colour
@@ -45,7 +45,7 @@ fan:
   hub       { label, icon }                   the product's own mark; chart draws a coiled rope ring around it
   handled   [ { label, sub?, icon, theme? } ] three to nine; theme in navy | sea | ochre | plum, cycled when absent
   more      boolean                           adds the dashed "and more" card
-  deliverable { label, kind, backing }        flat style only; kind in document | table
+  deliverable { label, kind, heading?, backing }   flat style only; kind in document | table; heading is the word on the page
   aside     string                            chart style: the one handwritten line
 
 before-after:
