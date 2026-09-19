@@ -502,6 +502,29 @@ test("register/reader-nouns passes when a label equals the checked repo director
   }
 });
 
+test('register/reader-nouns exempts "gives" and before-after\'s "with" (a verb/phrase on an arrow, not a product name), but still fails a handled label with the same word', () => {
+  // Reproduces the real false positive: a source's "gives" happens to equal
+  // a real example folder's name ("receipts"), which is not the product
+  // being named — it is the phrase drawn on the fan's arrow.
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-nouns-gives-"));
+  try {
+    mkdirSync(join(dir, "receipts"));
+    const spec = {
+      sources: [{ label: "Email", icon: "mail", gives: "receipts" }],
+      by: { label: "Sorter", icon: "target", with: "receipts" },
+      handled: [
+        { label: "receipts", icon: "car" },
+        { label: "Ship it", icon: "plane" },
+      ],
+    };
+    const findings = fails(_internal.checkReaderNouns(spec, dir));
+    assert.equal(findings.length, 1);
+    assert.match(findings[0].message, /"receipts"/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // curves/no-hook
 // ---------------------------------------------------------------------------
