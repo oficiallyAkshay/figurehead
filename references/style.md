@@ -12,13 +12,24 @@ Parchment with grain and a vignette, faint rhumb lines and a compass rose top ri
 
 Use `chart` when the product's own world is a harbour or the sea: a pier, an anchor, water, the way pierless's name gave one. It is not a general answer for "give it a pun"; it fits only when the world itself is nautical. A rocket or a magic wand is still not allowed even in `chart`; if the name doesn't supply a harbour or the sea, `chart` is the wrong style too, not just the wrong decoration.
 
+## Choosing a world
+
+Work through these in order, before reaching for a style.
+
+1. The world is the product's own architecture, seen from the reader's chair. Test it by pointing: the reader must be able to point at every real component in the picture and name what it is. A genre the nouns suggest, a metaphor the name suggests, or an adjacent profession each draws a different product's picture, not this one.
+2. A name gives a world only when its pun is the mechanism itself: pierless has no port, and that absence is the architecture, so a harbour is the world. When a name instead describes the outcome, the way boomerang describes something coming back, drawing that name is a gimmick, not a world.
+3. Themed does not mean textured. A software product's world is software itself: real interface surfaces, one accent colour, alignment, whitespace. A physical world earns a physical scene; a software world does not need one built for it. Whimsy is one register a world can take, not what makes something a theme.
+4. The feel words the owner gives, for the receipts tool: efficiency, structure, time back and freedom, are constraints to check the concept statement against, not decoration added once a world has already been picked.
+5. Work in this order: the architecture first, then the feel words, then the world, then the style.
+6. Rejections accumulate. Each one adds a constraint that every later draft must satisfy along with every constraint before it, and the new constraint is named in chat before the next draft is drawn.
+
 ## Earning a new style
 
-Most products are neither a compatibility case nor a harbour. A receipts tool's own feeling is efficiency, structure and time back, not a harbour: its world is the throw itself, one clean loop on drafting paper, not `chart`, and it should not default to `flat` either just because nothing else fits. A world like that is earned, not faked:
+Most products are neither a compatibility case nor a harbour. A receipts tool's own feeling is efficiency, structure and time back, not a harbour: its world is its own two app surfaces, an inbox list and a calendar month with the trip dates highlighted, in an interface register with one accent and no texture, not `chart`, and it should not default to `flat` either just because nothing else fits. A world like that is earned, not faked:
 
-1. Propose the world in chat, in one sentence, and wait for the owner to accept it before drawing anything. For the receipts tool, that sentence was: its feeling is efficiency, structure and time back, so its world is the throw itself, one clean loop on drafting paper. The owner accepted that world before anything was drawn.
+1. Propose the world in chat, in one sentence, and wait for the owner to accept it before drawing anything. For the receipts tool, that sentence was: its feeling is efficiency, structure and time back, so its world is the two app surfaces themselves, an inbox list and a calendar month with the trip dates highlighted, in an interface register with one accent and no texture. The owner accepted that world before anything was drawn.
 2. Make a hand-drawn reference for that world and get it accepted first, the same way `chart`'s reference (`examples/pierless/reference.svg`) was accepted before the renderer reproduced it.
-3. Only then does the renderer learn the style by name, with its own section in this file and its own golden in `examples/`. Proposing a world is not the same step as naming a style; only `chart` and `flat` exist in the renderer today, and the receipts tool's world has not yet earned a name of its own.
+3. Only then does the renderer learn the style by name, with its own section in this file and its own golden in `examples/`. The receipts tool's world earned the name `window`; that style is being added to the renderer now, and it is not yet one to choose until that work merges.
 
 A new world is never rendered by reusing `chart`'s harbour, or `flat`'s slate, with different labels on top. That is faking a style, not earning one.
 
