@@ -4,13 +4,23 @@
 
 Slate and one amber accent, outline icons, no fills. This is readmerlin's current look, and it is exactly what the seed renderer draws today for the two readmerlin goldens; their output must not change by a byte.
 
-Use `flat` when the tool's world has no pun to draw. A tool named for what it does rather than what it evokes (readmerlin gathering and checking a README, tidy-inbox sorting mail) has no harbour, no anchor, no boat waiting inside its name. Reaching for a scene anyway produces a rocket or a magic wand: a borrowed world, not the product's own. Stay flat.
+Use `flat` only for compatibility: when a hero already renders flat and must not move, such as readmerlin's and tidy-inbox's goldens. Flat is not the default and not a first choice. A new hero never lands here just because no world came to mind; it is only for the case where the bytes already exist and have to stay put.
 
 ## chart
 
 Parchment with grain and a vignette, faint rhumb lines and a compass rose top right, a few depth soundings, two gulls top left, three wave bands with ink crests along the bottom, a sailboat flying signal flags, rope links (solid rope colour under a darker dashed twist) tied through brass grommets, the hub in navy with a brass rim inside a coiled rope, a Georgia stack for headline, titles and italic subtitles, one handwritten aside, and hand-drawn wobble on outlines. Dark mode swaps parchment for night blue, sun for moon and stars, and lightens brass and rope.
 
-Use `chart` when the name itself gives a world to draw, the way pierless's name gave a harbour: a pier, an anchor, water. The scene has to be the product's own pun, not a decoration added after the fact. A rocket or a magic wand is still not allowed even in `chart`; if the name doesn't supply the scene, the scene doesn't belong.
+Use `chart` when the product's own world is a harbour or the sea: a pier, an anchor, water, the way pierless's name gave one. It is not a general answer for "give it a pun"; it fits only when the world itself is nautical. A rocket or a magic wand is still not allowed even in `chart`; if the name doesn't supply a harbour or the sea, `chart` is the wrong style too, not just the wrong decoration.
+
+## Earning a new style
+
+Most products are neither a compatibility case nor a harbour. A receipts tool is a trip, not a harbour: its world is a traveller's paper, not `chart`, and it should not default to `flat` either just because nothing else fits. A world like that is earned, not faked:
+
+1. Propose the world in chat, in one sentence: for example, "a receipts tool is a trip, so a traveller's paper." Wait for the owner to accept it before drawing anything.
+2. Make a hand-drawn reference for that world and get it accepted first, the same way `chart`'s reference (`examples/pierless/reference.svg`) was accepted before the renderer reproduced it.
+3. Only then does the renderer learn the style by name, with its own section in this file and its own golden in `examples/`.
+
+A new world is never rendered by reusing `chart`'s harbour, or `flat`'s slate, with different labels on top. That is faking a style, not earning one.
 
 ## What survives from the eight old decisions, and what was relaxed
 
