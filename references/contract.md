@@ -60,9 +60,7 @@ Unknown fields are an error. Unknown icon names are an error naming the known li
 
 ## The two styles
 
-**flat** is readmerlin's current look and is exactly what the seed renders today: slate and one amber accent, outline icons, no fills. Its output for the two readmerlin goldens must not change by a byte.
-
-**chart** is the pierless look: parchment with grain and a vignette, faint rhumb lines and a compass rose top right, a few depth soundings, two gulls top left, three wave bands with ink crests along the bottom and a sailboat flying signal flags, rope links (solid rope colour under a darker dashed twist) tied through brass grommets, the hub in navy with a brass rim inside a coiled rope, a Georgia stack for headline, titles and italic subtitles, one handwritten aside, and hand-drawn wobble on outlines from `feTurbulence` into `feDisplacementMap` at scale 2.4. Dark mode swaps parchment for night blue, sun for moon and stars, and lightens brass and rope. The palette is in the brief; the reference SVG is `examples/pierless/reference.svg`.
+`references/style.md` describes both and holds the palette. What the contract fixes: **flat** is exactly what the seed renders, and its output for the two readmerlin goldens must not change by a byte; **chart** reproduces `examples/pierless/reference.svg`, and `source.note` and `aside` are drawn by chart only.
 
 ## Goldens
 
