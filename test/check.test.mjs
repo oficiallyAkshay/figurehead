@@ -115,6 +115,47 @@ test("spec/shape fails when two after.parts items share the same \"at\"", () => 
   assert.ok(findings.some((f) => f.message.includes('"after.parts"') && f.message.includes('"top"')));
 });
 
+test("spec/shape passes for the pierless golden's chart spec (single source, hub present, no deliverable)", () => {
+  const pierlessSpec = readJson("examples/pierless/pierless.hero.json");
+  assert.deepEqual(_internal.checkSpecShape(pierlessSpec), []);
+});
+
+test("spec/shape fails a chart-style copy of tidy-inbox's spec for its \"sources\" and \"deliverable\"", () => {
+  // tidy-inbox is a real, otherwise-valid flat spec that happens to use both
+  // "sources" (plural) and "deliverable" — exactly the two fields chart has
+  // no layout for. Setting its style to "chart" should report both by name.
+  // It also has no "hub", so a third fail for that is expected too; this
+  // test only asserts the two named fields are among the fails.
+  const spec = { ...tidyInboxSpec, style: "chart" };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /^"sources" is not allowed when "style" is "chart"/.test(f.message)), "expected a fail naming \"sources\"");
+  assert.ok(findings.some((f) => /^"deliverable" is not allowed when "style" is "chart"/.test(f.message)), "expected a fail naming \"deliverable\"");
+});
+
+test("spec/shape fails a chart spec with no \"hub\"", () => {
+  const spec = {
+    kind: "fan",
+    style: "chart",
+    title: "t",
+    source: { label: "a", icon: "mail" },
+    handled: [
+      { label: "a", icon: "mail" },
+      { label: "b", icon: "car" },
+      { label: "c", icon: "plane" },
+    ],
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /^A chart spec needs "hub"/.test(f.message)));
+  assert.ok(!findings.some((f) => /"sources"/.test(f.message)));
+  assert.ok(!findings.some((f) => /"deliverable"/.test(f.message)));
+});
+
+test("spec/shape does not apply the chart-only rules to a flat spec (unchanged)", () => {
+  // A flat spec using "sources" and "deliverable" with no "hub" is exactly
+  // tidy-inbox's own real, valid shape — style stays absent (flat).
+  assert.deepEqual(_internal.checkSpecShape(tidyInboxSpec), []);
+});
+
 // ---------------------------------------------------------------------------
 // icons/known
 // ---------------------------------------------------------------------------
