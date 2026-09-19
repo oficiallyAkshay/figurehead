@@ -66,7 +66,7 @@
     <rect class="bar" x="58" y="226" width="140" height="8" rx="4"/>
     <rect class="bar" x="58" y="241" width="96" height="7" rx="3.5"/>
     <rect x="58" y="262" width="160" height="32" rx="16" fill="#1f7a45"/>
-    <g transform="translate(69,270) scale(0.517)" stroke="#f7f0de" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M6,21 V9 a9,9 0 0 0 9,9"/></g>
+    <g transform="translate(69,270) scale(0.62)" stroke="#f7f0de" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="5" r="2.5"/><circle cx="17" cy="5" r="2.5"/><circle cx="12" cy="20" r="2.5"/><path d="M7,7.5 V12 C7,15.5 9.5,16.5 10.7,17.5"/><path d="M17,7.5 V12 C17,15.5 14.5,16.5 13.3,17.5"/></g>
     <text class="sans" x="90" y="283" font-size="12.5" font-weight="600" fill="#f7f0de">Merge pull request</text>
     <text class="serif muted" x="58" y="318" font-size="12" font-style="italic">the only thing you do</text>
     <circle class="grommet" cx="266" cy="255" r="6.5"/>

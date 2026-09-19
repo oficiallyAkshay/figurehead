@@ -4,9 +4,11 @@
 // flat style (slate stroke) and the chart style (per-theme stroke, or a
 // literal colour on the source button).
 //
-// Some glyphs here are simplified from Lucide (https://lucide.dev), ISC
-// licence, copyright (c) Lucide Contributors. Full licence text:
-// https://lucide.dev/license
+// Most of the new glyphs added for the chart style are simplified from Lucide
+// (https://lucide.dev), ISC licence, copyright (c) Lucide Contributors. Full
+// licence text: https://lucide.dev/license. The exception is "git-merge",
+// which is traced from examples/pierless/reference.svg's own hand-inked
+// button icon (three circles joined by two curves) rather than from Lucide.
 //
 //   ISC License
 //   Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as
@@ -41,7 +43,7 @@ export const ICONS = {
   train: [20, '<rect x="3" y="1" width="14" height="14" rx="3"/><path d="M3,9 h14"/><circle cx="7" cy="12" r="1"/><circle cx="13" cy="12" r="1"/><path d="M5,15 l-2,4"/><path d="M15,15 l2,4"/>'],
   wifi: [20, '<path d="M1,7 a13,13 0 0 1 18,0"/><path d="M4,10.5 a9,9 0 0 1 12,0"/><path d="M7,14 a5,5 0 0 1 6,0"/><circle cx="10" cy="17" r="1"/>'],
   more: [20, '<circle cx="4" cy="10" r="1.5"/><circle cx="10" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/>'],
-  "git-merge": [24, '<circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M6,21 V9 a9,9 0 0 0 9,9"/>'],
+  "git-merge": [24, '<circle cx="7" cy="5" r="2.5"/><circle cx="17" cy="5" r="2.5"/><circle cx="12" cy="20" r="2.5"/><path d="M7,7.5 V12 C7,15.5 9.5,16.5 10.7,17.5"/><path d="M17,7.5 V12 C17,15.5 14.5,16.5 13.3,17.5"/>'],
   anchor: [24, '<circle cx="12" cy="5" r="3"/><path d="M12,22 V8"/><path d="M5,12 H2 a10,10 0 0 0 20,0 h-3"/>'],
   download: [24, '<path d="M21,15 v4 a2,2 0 0 1 -2,2 H5 a2,2 0 0 1 -2,-2 v-4"/><path d="M7,10 L12,15 L17,10"/><path d="M12,15 V3"/>'],
   refresh: [24, '<path d="M22,5 v6 h-6"/><path d="M2,19 v-6 h6"/><path d="M4,10 a9,9 0 0 1 15,-4 l3,3"/><path d="M20,14 a9,9 0 0 1 -15,4 l-3,-3"/>'],

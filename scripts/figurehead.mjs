@@ -431,7 +431,7 @@ function renderFanChart(spec) {
     o.push('    <rect class="bar" x="58" y="226" width="140" height="8" rx="4"/>');
     o.push('    <rect class="bar" x="58" y="241" width="96" height="7" rx="3.5"/>');
     o.push('    <rect x="58" y="262" width="160" height="32" rx="16" fill="#1f7a45"/>');
-    o.push(`    ${rawGlyph(source.icon, 69, 270, 12.4, 'stroke="#f7f0de" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"')}`);
+    o.push(`    ${rawGlyph(source.icon, 69, 270, 14.88, 'stroke="#f7f0de" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"')}`);
     o.push(`    <text class="sans" x="90" y="283" font-size="12.5" font-weight="600" fill="#f7f0de">${esc(source.label)}</text>`);
     if (source.note) o.push(`    <text class="serif muted" x="58" y="318" font-size="12" font-style="italic">${esc(source.note)}</text>`);
     o.push('    <circle class="grommet" cx="266" cy="255" r="6.5"/>');
