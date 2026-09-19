@@ -69,8 +69,7 @@ Unknown fields are an error. Unknown icon names are an error naming the known li
 | Example | Spec | Status of the SVG |
 | --- | --- | --- |
 | `readmerlin` | from readmerlin, unchanged | byte golden from day one; the seed already reproduces it |
-| `tidy-inbox` | from readmerlin, unchanged | byte golden from day one |
-| `boomerang` | written by the renderer builder from `reference.svg` | the renderer's own output, committed once it visually matches the reference; `reference.svg` is hand-made and never a byte golden |
+| `tidy-inbox` | from readmerlin, unchanged | byte golden from day one; the receipts hero, two sources fanning to one document |
 | `pierless` | the spec pierless already has | the renderer's own output in `chart` style, committed once the owner accepts it in chat; `reference.svg` is hand-made and never a byte golden |
 
 The conductor looks at every golden rendered, at full width, in light and dark, before it merges.
