@@ -252,6 +252,121 @@ test("a chart card subtitle too long for its card is refused by name", () => {
   );
 });
 
+// The window style: an automation between two app surfaces (an inbox panel, a calendar
+// panel), a hub disc and a stacked deliverable sheet. See examples/receipts for the golden.
+function windowSpec(overrides = {}) {
+  return {
+    kind: "fan",
+    style: "window",
+    title: "t",
+    sources: [
+      { label: "Inbox", gives: "receipts" },
+      { label: "Calendar", gives: "trip dates" },
+    ],
+    hub: { label: "Hub", icon: "git-merge" },
+    handled: [{ label: "One", icon: "car" }],
+    deliverable: { label: "one PDF", heading: "Summary", backing: "back" },
+    ...overrides,
+  };
+}
+
+test("rendering the same window spec twice gives equal bytes", () => {
+  const spec = JSON.parse(readFileSync(join(examplesDir, "receipts", "receipts.hero.json"), "utf8"));
+  assert.equal(render(spec), render(spec));
+});
+
+test('a window spec with "source" (a chart/flat-style field) is refused by name', () => {
+  assert.throws(() => render(windowSpec({ source: { label: "Go", icon: "git-merge" } })), /Field "source" is not drawn by the window style/);
+});
+
+test('a window spec with "aside" (a chart-style field) is refused by name', () => {
+  assert.throws(() => render(windowSpec({ aside: "a note" })), /Field "aside" is not drawn by the window style/);
+});
+
+test('a window spec with a handled item\'s "theme" (a chart-style field) is refused by name', () => {
+  assert.throws(() => render(windowSpec({ handled: [{ label: "One", icon: "car", theme: "navy" }] })), /Field "theme" on "One" is not drawn by the window style/);
+});
+
+test('a window spec with no "sources" is refused by name', () => {
+  const spec = windowSpec();
+  delete spec.sources;
+  assert.throws(() => render(spec), /The window style needs "sources"/);
+});
+
+test('a window spec with one "sources" instead of two is refused by name', () => {
+  assert.throws(() => render(windowSpec({ sources: [{ label: "Inbox" }] })), /needs exactly two "sources"/);
+});
+
+test('a window spec with no "hub" is refused by name', () => {
+  const spec = windowSpec();
+  delete spec.hub;
+  assert.throws(() => render(spec), /The window style needs a "hub"/);
+});
+
+test('a window spec with no "deliverable" is refused by name', () => {
+  const spec = windowSpec();
+  delete spec.deliverable;
+  assert.throws(() => render(spec), /The window style needs a "deliverable"/);
+});
+
+// Window layout at many items: the inbox panel's (and so, when it is the taller panel, the
+// canvas's) height grows with the handled-item count (the "more" row counts as one more
+// item) instead of compressing rows until they overlap or leave the panel.
+function windowSpecWithHandled(count, more = false) {
+  const icons = ["mail", "calendar", "target", "car", "utensils", "plane", "bed", "train", "wifi"];
+  return windowSpec({
+    handled: Array.from({ length: count }, (_, i) => ({ label: `Item ${i + 1}`, icon: icons[i % icons.length] })),
+    ...(more ? { more: true } : {}),
+  });
+}
+
+// Parses only what the fix promises: the viewBox, the inbox panel's own rect (the first
+// "panel"-classed rect), and the row dividers straight out of the rendered rowline path.
+function windowLayoutFacts(svg) {
+  const [, w, h] = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
+  const [, px, py, pw, ph] = /<rect class="panel" x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/.exec(svg);
+  const [, rowlineD] = /<path class="rowline" d="([^"]+)"/.exec(svg);
+  const dividers = [...rowlineD.matchAll(/M[\d.]+,([\d.]+)/g)].map(([, y]) => +y);
+  return { width: +w, height: +h, panel: { x: +px, y: +py, right: +px + +pw, bottom: +py + +ph }, dividers };
+}
+
+for (const count of [3, 5, 9]) {
+  test(`a window with ${count} handled items keeps every inbox row inside its panel and the panel inside the viewBox`, () => {
+    const svg = render(windowSpecWithHandled(count));
+    const { width, height, panel, dividers } = windowLayoutFacts(svg);
+    assert.equal(dividers.length, count + 1, `expected ${count + 1} row dividers for ${count} rows, found ${dividers.length}`);
+    for (let i = 0; i < count; i++) {
+      const top = dividers[i];
+      const bottom = dividers[i + 1];
+      assert.ok(top >= panel.y && bottom <= panel.bottom, `row ${i} range [${top}, ${bottom}] is not inside the panel [${panel.y}, ${panel.bottom}]`);
+    }
+    assert.ok(panel.x >= 0 && panel.right <= width, `panel x-range [${panel.x}, ${panel.right}] is not inside the viewBox width ${width}`);
+    assert.ok(panel.y >= 0 && panel.bottom <= height, `panel y-range [${panel.y}, ${panel.bottom}] is not inside the viewBox height ${height}`);
+  });
+}
+
+test("a window with 9 handled items and more:true keeps the more row inside its panel and the panel inside the viewBox too", () => {
+  const svg = render(windowSpecWithHandled(9, true));
+  const { width, height, panel, dividers } = windowLayoutFacts(svg);
+  assert.equal(dividers.length, 11, `expected 9 handled rows plus the more row (11 dividers), found ${dividers.length}`);
+  for (let i = 0; i < 10; i++) {
+    const top = dividers[i];
+    const bottom = dividers[i + 1];
+    assert.ok(top >= panel.y && bottom <= panel.bottom, `row ${i} range [${top}, ${bottom}] is not inside the panel [${panel.y}, ${panel.bottom}]`);
+  }
+  assert.ok(panel.x >= 0 && panel.right <= width, `panel x-range [${panel.x}, ${panel.right}] is not inside the viewBox width ${width}`);
+  assert.ok(panel.y >= 0 && panel.bottom <= height, `panel y-range [${panel.y}, ${panel.bottom}] is not inside the viewBox height ${height}`);
+});
+
+test("the receipts seven-row window still computes the same 900x480 canvas and 318-tall inbox panel", () => {
+  const spec = JSON.parse(readFileSync(join(examplesDir, "receipts", "receipts.hero.json"), "utf8"));
+  const svg = render(spec);
+  const { width, height, panel } = windowLayoutFacts(svg);
+  assert.equal(width, 900, "the receipts canvas width must stay 900");
+  assert.equal(height, 480, "the receipts canvas height must stay 480");
+  assert.equal(panel.bottom - panel.y, 318, "the receipts inbox panel must stay 318 tall");
+});
+
 test("the icons doc lists exactly the icons the table has", () => {
   const doc = readFileSync(resolve(root, "references", "icons.md"), "utf8");
   const documented = new Set(
