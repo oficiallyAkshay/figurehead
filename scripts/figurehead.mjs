@@ -626,6 +626,16 @@ async function runCli(argv) {
   process.exitCode = 2;
 }
 
+// Not a top-level `await runCli(...)`: that would make this module's own evaluation
+// asynchronous, and the "check" subcommand dynamically imports scripts/check.mjs, which
+// statically imports this file back (for `labels`). A top-level await here turns that
+// into a cycle an async module can never finish linking, and the process is killed with
+// "Detected unsettled top-level await" (exit code 13) instead of ever reaching runCli's
+// own exit code. Running the promise without awaiting it at the top level keeps this
+// module's evaluation synchronous, so the cycle resolves normally.
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  await runCli(process.argv.slice(2));
+  runCli(process.argv.slice(2)).catch((err) => {
+    console.error(err?.stack ?? String(err));
+    process.exitCode = 1;
+  });
 }

@@ -2,15 +2,19 @@
 // bad input is refused by name, and the published icon list agrees with the table it is generated from.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
+import { tmpdir } from "node:os";
+import { spawnSync } from "node:child_process";
 import { render } from "../scripts/figurehead.mjs";
 import { ICONS } from "../scripts/icons.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const examplesDir = resolve(root, "examples");
 const examples = readdirSync(examplesDir).filter((name) => statSync(join(examplesDir, name)).isDirectory());
+const cliPath = resolve(root, "scripts", "figurehead.mjs");
+const checksInstalled = existsSync(resolve(root, "scripts", "check.mjs"));
 
 for (const name of examples) {
   const specPath = join(examplesDir, name, `${name}.hero.json`);
@@ -101,3 +105,47 @@ test("the Lucide licence notice is present in both the icon table and its doc", 
     assert.match(text, /lucide\.dev\/license/, `${label} is missing the licence link`);
   }
 });
+
+// End-to-end: actually spawns `node scripts/figurehead.mjs check`, the way a real caller would, rather than
+// calling an imported function. This is what caught the module ever having deadlocked on Node's own top-level
+// await warning (exit code 13) instead of running the checks and exiting 0 or 1.
+//
+// scripts/check.mjs is owned by another PR; on this branch alone it may not exist yet. When it is absent the
+// contract says the CLI itself prints one line and exits 2 (covered by the CLI usage above), and there is
+// nothing to run this end-to-end test against, so it is skipped with a message explaining why. Once both PRs
+// share a branch (or land on main together) `checksInstalled` is true and this test runs for real.
+test(
+  "the check subcommand exits 0 on a passing pair and 1 on a failing pair, printing tab-separated findings",
+  { skip: !checksInstalled && "scripts/check.mjs is not on this branch yet (it lands in a separate PR); this test runs for real once both are merged" },
+  () => {
+    const passing = spawnSync(process.execPath, [cliPath, "check", join(examplesDir, "readmerlin", "readmerlin.hero.json"), join(examplesDir, "readmerlin", "readmerlin.svg"), "--repo", root], {
+      encoding: "utf8",
+    });
+    assert.equal(passing.status, 0, `expected exit 0 on a passing pair, got ${passing.status}. stderr: ${passing.stderr}`);
+    for (const line of passing.stdout.split("\n").filter(Boolean)) {
+      assert.equal(line.split("\t").length, 4, `expected id/level/message/repair, got: ${line}`);
+    }
+
+    // Built inline, never a committed example: a copy of readmerlin's real spec with an invalid style and an
+    // unknown field, guaranteed to fail spec/shape regardless of what any example currently looks like.
+    const dir = mkdtempSync(join(tmpdir(), "figurehead-check-"));
+    const badSpecPath = join(dir, "bad.hero.json");
+    try {
+      const spec = JSON.parse(readFileSync(join(examplesDir, "readmerlin", "readmerlin.hero.json"), "utf8"));
+      spec.style = "not-a-real-style";
+      spec.notAKnownField = true;
+      writeFileSync(badSpecPath, JSON.stringify(spec));
+
+      const failing = spawnSync(process.execPath, [cliPath, "check", badSpecPath, join(examplesDir, "readmerlin", "readmerlin.svg")], { encoding: "utf8" });
+      assert.equal(failing.status, 1, `expected exit 1 on a failing pair, got ${failing.status}. stderr: ${failing.stderr}`);
+      const lines = failing.stdout.split("\n").filter(Boolean);
+      assert.ok(lines.length > 0, "expected at least one finding line for a spec with an invalid style and an unknown field");
+      for (const line of lines) {
+        assert.equal(line.split("\t").length, 4, `expected id/level/message/repair, got: ${line}`);
+      }
+      assert.ok(lines.some((l) => l.split("\t")[1] === "fail"), "expected at least one fail-level finding");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+);
