@@ -30,7 +30,13 @@ Apply the litmus test in `references/concept.md` before going on: if an engineer
 
 **Step B. Shape and render.**
 
-Answer the three questions in `references/shape.md` to choose `kind`. Use `references/style.md` to choose `style`. Write `<name>.hero.json` beside where the SVG will live, using only the fields the contract defines and icons listed in `references/icons.md`.
+Answer the three questions in `references/shape.md` to choose `kind`.
+
+Then choose a `style`. Every hero gets one on purpose; `style` is never left out of the spec, and `flat` is never chosen just because it is the default. Read `references/style.md` for what each named style draws and where it fits. Use `flat` only for compatibility, when the hero already renders flat and must not move, such as readmerlin's and tidy-inbox's goldens. Otherwise, find the style in the world the product's own name or job gives: pierless is a harbour, so `chart`. A receipts tool is a trip, not a harbour, so its world is a traveller's paper, not `chart`.
+
+When no existing style fits that world, say so in chat: name the world in one sentence, for example "a receipts tool is a trip, so a traveller's paper," and wait for the owner to accept it before drawing anything. A style earned this way is added to the renderer properly, as its own named style with its own golden, per `references/style.md`'s "earning a new style" section. It is never faked by reusing the nearest existing style's scene with new words.
+
+Write `<name>.hero.json` beside where the SVG will live, using only the fields the contract defines, the chosen `style`, and icons listed in `references/icons.md`.
 
 Run:
 
