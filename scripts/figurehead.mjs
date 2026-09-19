@@ -184,8 +184,20 @@ function head(o, spec, height) {
   o.push("  </defs>");
 }
 
+// Two problems (or two parts) tied to the same place would draw their marks and leaders on top of each other;
+// refused by name instead of silently overlapping.
+function assertDistinctAt(items, where) {
+  const seen = new Set();
+  for (const item of items ?? []) {
+    if (seen.has(item.at)) throw new Error(`Two ${where} share the place "${item.at}".`);
+    seen.add(item.at);
+  }
+}
+
 // One thing made better. Left: the page the reader has, long, its faults marked in their words. Right: the short page they wanted, its parts named.
 function renderBeforeAfter(spec) {
+  assertDistinctAt(spec.before?.problems, "problems");
+  assertDistinctAt(spec.after?.parts, "parts");
   const o = [];
   const H = 490;
   head(o, spec, H);
@@ -303,11 +315,16 @@ function renderFanFlat(spec) {
 // The chart style: a hand-inked nautical chart, reproducing examples/pierless/reference.svg. Everything about the
 // scene (the parchment, the rhumb lines, the compass rose, the gulls, the waves, the sailboat, the grain and the
 // vignette) is the style's own fixed world, per references/contract.md; only the headline, the source card, the
-// hub and the handled cards are drawn from the spec. Canvas is fixed at 820x500, the pierless hero's own size.
+// hub and the handled cards are drawn from the spec. The canvas is fixed at 820 wide, the pierless hero's own
+// width, but its height grows with the handled-item count (the "more" card counts as one more item): the card
+// height (66) and the four-item pierless gap (85) never change, the topmost card always starts the same distance
+// below the header, and the wave line always keeps the same fixed margin below the bottom card. The sea, its
+// foam, the sailboat, the depth soundings and the vignette all shift down with the extra height; the compass,
+// gulls and headline stay exactly where they always were. At the pierless four-item count this still reproduces
+// the fixed 820x500 canvas byte for byte (see renderFanChart).
 // ---------------------------------------------------------------------------
 const CHART_W = 820;
-const CHART_H = 500;
-const HUB = { cx: 370, cy: 255, r: 34, ring: 45 };
+const HUB_BASE = { cx: 370, r: 34, ring: 45 };
 // Nine hand-set wobble angles, the first four exactly what pierless's accepted pass used. Fixed, not random: the
 // same spec must always draw the same bytes.
 const CARD_TILT = [-1.2, 0.9, -0.6, 1.4, -1.5, 1.1, -0.8, 1.3, -1.0];
@@ -320,8 +337,8 @@ function chartHeadline(headline, brandWord) {
   return `${esc(before)}<tspan class="brass">${esc(brandWord)}</tspan>${esc(after)}`;
 }
 
-function chartHead(o, spec) {
-  o.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CHART_W} ${CHART_H}" width="${CHART_W}" height="${CHART_H}" role="img" aria-labelledby="hero-title">`);
+function chartHead(o, spec, height) {
+  o.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CHART_W} ${height}" width="${CHART_W}" height="${height}" role="img" aria-labelledby="hero-title">`);
   o.push(`  <title id="hero-title">${esc(spec.title)}</title>`);
   o.push("  <defs>");
   o.push('    <filter id="rough" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/></filter>');
@@ -374,12 +391,27 @@ function chartHead(o, spec) {
   o.push("  </defs>");
 }
 
+// The soundings scattered across the water, each an [x, y, label] where y is measured at the pierless four-item
+// height; renderFanChart shifts them down by delta with everything else that grows with the canvas.
+const SOUNDINGS = [
+  [176, 118, "7"],
+  [300, 148, "12"],
+  [84, 380, "9"],
+  [330, 372, "11"],
+  [760, 420, "8"],
+  [410, 96, "14"],
+  [150, 490, "4"],
+  [430, 494, "6"],
+  [690, 488, "5"],
+];
+
 // The style's own fixed world: parchment, rhumb lines, soundings, moon and stars, compass rose, gulls. Identical
-// for every spec drawn in the chart style, per references/contract.md.
-function chartScene(o) {
-  o.push(`  <rect class="bg" x="0" y="0" width="${CHART_W}" height="${CHART_H}"/>`);
+// for every spec drawn in the chart style at a given height, per references/contract.md. `height` sizes the
+// parchment itself; `delta` (0 at the pierless four-item count) shifts the soundings down with the sea.
+function chartScene(o, height, delta) {
+  o.push(`  <rect class="bg" x="0" y="0" width="${CHART_W}" height="${height}"/>`);
   o.push('  <g transform="translate(764,58)"><path class="rhumb" d="M0,0 L0,-900 M0,0 L344,-831 M0,0 L636,-636 M0,0 L831,-344 M0,0 L900,0 M0,0 L831,344 M0,0 L636,636 M0,0 L344,831 M0,0 L0,900 M0,0 L-344,831 M0,0 L-636,636 M0,0 L-831,344 M0,0 L-900,0 M0,0 L-831,-344 M0,0 L-636,-636 M0,0 L-344,-831"/></g>');
-  o.push('  <g class="sound serif" font-size="11"><text x="176" y="118">7</text><text x="300" y="148">12</text><text x="84" y="380">9</text><text x="330" y="372">11</text><text x="760" y="420">8</text><text x="410" y="96">14</text><text x="150" y="490">4</text><text x="430" y="494">6</text><text x="690" y="488">5</text></g>');
+  o.push(`  <g class="sound serif" font-size="11">${SOUNDINGS.map(([x, y, t]) => `<text x="${x}" y="${y + delta}">${t}</text>`).join("")}</g>`);
   o.push('  <g class="moon"><path d="M128,100 a14,14 0 1 0 6,24 a11,11 0 1 1 -6,-24 z"/></g>');
   o.push('  <g class="stars"><circle cx="610" cy="30" r="1.3"/><circle cx="560" cy="78" r="1.1"/><circle cx="96" cy="100" r="1.2"/><circle cx="40" cy="150" r="1"/><circle cx="330" cy="110" r="1"/><circle cx="800" cy="130" r="1.2"/><path d="M640,64 l1.6,-5 1.6,5 5,1.6 -5,1.6 -1.6,5 -1.6,-5 -5,-1.6 z"/></g>');
   o.push('  <g transform="translate(764,58)" filter="url(#rough)"><circle class="ring" r="28"/><circle class="ring" r="31" stroke-dasharray="1.5 3"/><polygon class="star-open" points="0,-34 2.7,-6.5 14.1,-14.1 6.5,-2.7 34,0 6.5,2.7 14.1,14.1 2.7,6.5 0,34 -2.7,6.5 -14.1,14.1 -6.5,2.7 -34,0 -6.5,-2.7 -14.1,-14.1 -2.7,-6.5"/><path class="star-fill" d="M0,0 L0,-34 L-2.7,-6.5 Z M0,0 L34,0 L6.5,-2.7 Z M0,0 L0,34 L2.7,6.5 Z M0,0 L-34,0 L-6.5,2.7 Z"/><circle class="star-fill" r="2"/></g>');
@@ -387,14 +419,37 @@ function chartScene(o) {
   o.push('  <g class="gull" filter="url(#rough)"><path d="M30,44 q7,-8 14,0 q7,-8 14,0"/><path d="M76,64 q5,-6 10,0 q5,-6 10,0"/></g>');
 }
 
-function chartWavesAndBoat(o) {
+// A wave band's baseline (and its one Q control point) run the full canvas width, ending in a shared flat floor
+// (`bottom`) that always sits well past the visible edge. `delta` is 0 at the pierless four-item height.
+function wavePath(cls, baseline, control, bottom) {
+  const tPoints = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900]
+    .map((x) => `T ${x},${baseline}`)
+    .join(" ");
+  return `    <path class="${cls}" d="M-50,${baseline} Q -25.0,${control} 0,${baseline} ${tPoints} L 880,${bottom} L -50,${bottom} Z"/>`;
+}
+
+// The ink crests riding each wave, each an [x, y] plus its own little arc, y measured at the pierless height.
+const CRESTS = [
+  [20, 452, 8, -5, 16],
+  [238, 456, 8, -5, 16],
+  [318, 470, 7, -4, 14],
+  [512, 453, 8, -5, 16],
+  [602, 468, 7, -4, 14],
+  [742, 455, 8, -5, 16],
+  [372, 488, 6, -4, 12],
+  [650, 490, 6, -4, 12],
+  [92, 486, 6, -4, 12],
+];
+
+function chartWavesAndBoat(o, delta) {
+  const bottom = 520 + delta;
   o.push('  <g filter="url(#rough)">');
-  o.push('    <path class="w1" d="M-50,446 Q -25.0,439 0,446 T 50,446 T 100,446 T 150,446 T 200,446 T 250,446 T 300,446 T 350,446 T 400,446 T 450,446 T 500,446 T 550,446 T 600,446 T 650,446 T 700,446 T 750,446 T 800,446 T 850,446 T 900,446 L 880,520 L -50,520 Z"/>');
-  o.push('    <path class="w2" d="M-50,462 Q -25.0,456 0,462 T 50,462 T 100,462 T 150,462 T 200,462 T 250,462 T 300,462 T 350,462 T 400,462 T 450,462 T 500,462 T 550,462 T 600,462 T 650,462 T 700,462 T 750,462 T 800,462 T 850,462 T 900,462 L 880,520 L -50,520 Z"/>');
-  o.push('    <path class="w3" d="M-50,480 Q -25.0,475 0,480 T 50,480 T 100,480 T 150,480 T 200,480 T 250,480 T 300,480 T 350,480 T 400,480 T 450,480 T 500,480 T 550,480 T 600,480 T 650,480 T 700,480 T 750,480 T 800,480 T 850,480 T 900,480 L 880,520 L -50,520 Z"/>');
-  o.push('    <path class="crest" d="M20,452 q8,-5 16,0 M238,456 q8,-5 16,0 M318,470 q7,-4 14,0 M512,453 q8,-5 16,0 M602,468 q7,-4 14,0 M742,455 q8,-5 16,0 M372,488 q6,-4 12,0 M650,490 q6,-4 12,0 M92,486 q6,-4 12,0"/>');
+  o.push(wavePath("w1", 446 + delta, 439 + delta, bottom));
+  o.push(wavePath("w2", 462 + delta, 456 + delta, bottom));
+  o.push(wavePath("w3", 480 + delta, 475 + delta, bottom));
+  o.push(`    <path class="crest" d="${CRESTS.map(([x, y, qx, qy, qx2]) => `M${x},${y + delta} q${qx},${qy} ${qx2},0`).join(" ")}"/>`);
   o.push("  </g>");
-  o.push('  <g transform="translate(112,446) rotate(-3)" filter="url(#rough)">');
+  o.push(`  <g transform="translate(112,${446 + delta}) rotate(-3)" filter="url(#rough)">`);
   o.push('    <path class="hull" d="M-40,-8 L40,-8 Q32,8 0,10 Q-32,8 -40,-8 Z"/>');
   o.push('    <path class="line" d="M-30,-2 Q0,4 30,-2"/>');
   o.push('    <path class="line" d="M0,-8 V-66" stroke-width="2"/>');
@@ -408,13 +463,61 @@ function chartWavesAndBoat(o) {
   o.push("  </g>");
 }
 
-function renderFanChart(spec) {
-  const o = [];
-  chartHead(o, spec);
-  chartScene(o);
+// The chart headline's coarse per-character room, the same kind of rule assertFits uses for card labels: an
+// estimate of Georgia bold's width at 27px (about 10.5px/char), with the canvas's 40px margin on each side.
+function assertHeadlineFits(headline) {
+  const CHARS_PER_PX = 10.5;
+  const MARGIN = 40;
+  const maxChars = Math.floor((CHART_W - 2 * MARGIN) / CHARS_PER_PX);
+  assertFits(headline, maxChars, "headline");
+}
 
-  const hub = spec.hub ?? { label: "", icon: "target" };
+// The chart style draws exactly one source (in the browser-chrome card) and one hub (the coiled-rope ring); it
+// has no separate deliverable card at all. A spec written for the flat style's shape — several `sources`, a
+// `deliverable`, no `hub` — would otherwise render with those pieces silently missing instead of refusing by name.
+function assertChartShape(spec) {
+  if (spec.sources) throw new Error('Field "sources" is not drawn by the chart style; chart draws one source. Use "source" instead, or set style to "flat".');
+  if (spec.deliverable) throw new Error('Field "deliverable" is not drawn by the chart style; that field is flat-style only. Set style to "flat", or drop "deliverable".');
+  if (!spec.hub) throw new Error('The chart style needs a "hub" to draw; none was given.');
+}
+
+function renderFanChart(spec) {
+  assertChartShape(spec);
+  const o = [];
+
+  // The layout: how tall the canvas needs to be, and where the hub sits, both driven by the handled-item count
+  // (the "more" card, when present, counts as one more item). The card height (66) and the four-item pierless
+  // gap (85) are always the same; the topmost card always starts TOP_ANCHOR below the header, exactly where
+  // pierless's own top card sits, and the wave line always keeps MARGIN_ABOVE_WAVE below the bottom card, exactly
+  // pierless's own gap. `delta` (0 at the pierless four-item count) is how far the sea, its foam, the sailboat,
+  // the soundings and the vignette all shift down to follow. At four items this reproduces the fixed 820x500
+  // canvas byte for byte: same 255 hub, same 446 wave line, same 500 height.
+  const handled = spec.handled ?? [];
+  const n = handled.length;
+  const gapY = 85;
+  const cardH = 66;
+  const TOP_ANCHOR = 94.5;
+  const MARGIN_ABOVE_WAVE = 30.5;
+  const BOTTOM_SPAN = 54;
+  const handledOffsets = handled.map((_, i) => (i - (n - 1) / 2) * gapY);
+  const moreOffset = spec.more ? (n - n / 2) * gapY : null;
+  const allOffsets = moreOffset === null ? handledOffsets : [...handledOffsets, moreOffset];
+  if (allOffsets.length === 0) allOffsets.push(0);
+  const minOffset = Math.min(...allOffsets);
+  const maxOffset = Math.max(...allOffsets);
+  const hubCy = TOP_ANCHOR - minOffset + cardH / 2;
+  const cardsBottom = hubCy + maxOffset + cardH / 2;
+  const waveLineY = cardsBottom + MARGIN_ABOVE_WAVE;
+  const height = Math.round(waveLineY + BOTTOM_SPAN);
+  const delta = height - 500; // 500: the pierless four-item canvas's own fixed height.
+  const HUB = { ...HUB_BASE, cy: hubCy };
+
+  chartHead(o, spec, height);
+  chartScene(o, height, delta);
+
+  const hub = spec.hub; // assertChartShape has already required this.
   if (spec.headline) {
+    assertHeadlineFits(spec.headline);
     o.push(`  <text class="serif ink" x="400" y="42" font-size="27" font-weight="700" text-anchor="middle">${chartHeadline(spec.headline, hub.label)}</text>`);
   }
   if (spec.subhead) {
@@ -436,7 +539,8 @@ function renderFanChart(spec) {
     if (source.note) o.push(`    <text class="serif muted" x="58" y="318" font-size="12" font-style="italic">${esc(source.note)}</text>`);
     o.push('    <circle class="grommet" cx="266" cy="255" r="6.5"/>');
     o.push("  </g>");
-    o.push('  <g filter="url(#rough)"><path class="rope" d="M272,255 C 295,248 314,262 334,255"/><path class="twist" d="M272,255 C 295,248 314,262 334,255"/></g>');
+    // The source card itself never moves; only the end tied to the hub follows it when the hub does.
+    o.push(`  <g filter="url(#rough)"><path class="rope" d="M272,255 C 295,248 314,${hubCy + 7} 334,${hubCy}"/><path class="twist" d="M272,255 C 295,248 314,${hubCy + 7} 334,${hubCy}"/></g>`);
   }
 
   // The hub: the product's own mark, inside a coiled rope ring.
@@ -459,12 +563,8 @@ function renderFanChart(spec) {
   // The handled cards: what gets done, fanned out from the hub on rope, tied through brass grommets. Three or
   // four cards sit at one x, evenly spaced; more than four borrow the flat style's fan geometry (a card's x
   // staggers with its distance from the ends) so the rope curves keep clear of the hook the brief warns against.
-  const handled = spec.handled ?? [];
-  const n = handled.length;
   const baseX = 440;
   const cardW = 290;
-  const cardH = 66;
-  const gapY = n <= 4 ? 85 : Math.max(56, Math.round(335 / Math.max(1, n - 1)));
   const positions = handled.map((h, i) => {
     const cy = Math.round(HUB.cy + (i - (n - 1) / 2) * gapY);
     const xOffset = n <= 4 ? 0 : 14 * Math.min(i, n - 1 - i, 3);
@@ -501,9 +601,9 @@ function renderFanChart(spec) {
     o.push(`  <g><rect class="c-${THEMES[i % THEMES.length]}" x="${baseX}" y="${cy - cardH / 2}" width="${cardW}" height="${cardH}" rx="6" stroke-dasharray="4 4"/><text class="serif muted" x="${baseX + 36}" y="${cy + 6}" font-size="17" font-style="italic">and more</text></g>`);
   }
 
-  chartWavesAndBoat(o);
-  o.push(`  <rect class="vig" x="0" y="0" width="${CHART_W}" height="${CHART_H}"/>`);
-  o.push(`  <rect class="grain" x="0" y="0" width="${CHART_W}" height="${CHART_H}" filter="url(#grain)"/>`);
+  chartWavesAndBoat(o, delta);
+  o.push(`  <rect class="vig" x="0" y="0" width="${CHART_W}" height="${height}"/>`);
+  o.push(`  <rect class="grain" x="0" y="0" width="${CHART_W}" height="${height}" filter="url(#grain)"/>`);
   o.push("</svg>");
   return o.join("\n") + "\n";
 }

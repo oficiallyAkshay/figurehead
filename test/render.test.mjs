@@ -68,6 +68,174 @@ test("a chart card title too long for its card is refused by name", () => {
   );
 });
 
+test('a chart spec with "sources" (a flat-style field) is refused by name', () => {
+  assert.throws(
+    () =>
+      render({
+        kind: "fan",
+        style: "chart",
+        title: "t",
+        sources: [
+          { label: "Inbox", icon: "mail", gives: "receipts" },
+          { label: "Calendar", icon: "calendar", gives: "dates" },
+        ],
+        hub: { label: "Hub", icon: "anchor" },
+        handled: [{ label: "One", icon: "bell" }],
+      }),
+    /Field "sources" is not drawn by the chart style/
+  );
+});
+
+test('a chart spec with a "deliverable" (a flat-style field) is refused by name', () => {
+  assert.throws(
+    () =>
+      render({
+        kind: "fan",
+        style: "chart",
+        title: "t",
+        source: { label: "Go", icon: "git-merge" },
+        hub: { label: "Hub", icon: "anchor" },
+        handled: [{ label: "One", icon: "bell" }],
+        deliverable: { label: "one claim", kind: "table" },
+      }),
+    /Field "deliverable" is not drawn by the chart style/
+  );
+});
+
+test('a chart spec with no "hub" is refused by name', () => {
+  assert.throws(
+    () =>
+      render({
+        kind: "fan",
+        style: "chart",
+        title: "t",
+        source: { label: "Go", icon: "git-merge" },
+        handled: [{ label: "One", icon: "bell" }],
+      }),
+    /The chart style needs a "hub"/
+  );
+});
+
+test("the tidy-inbox spec, flipped to the chart style, is refused rather than silently missing pieces", () => {
+  const spec = JSON.parse(readFileSync(join(examplesDir, "tidy-inbox", "tidy-inbox.hero.json"), "utf8"));
+  spec.style = "chart";
+  assert.throws(() => render(spec));
+});
+
+test("a chart headline too long for the canvas is refused by name", () => {
+  const longHeadline = "This headline is deliberately far too long to fit across the eight hundred twenty pixel canvas at all";
+  assert.throws(
+    () =>
+      render({
+        kind: "fan",
+        style: "chart",
+        title: "t",
+        headline: longHeadline,
+        hub: { label: "Hub", icon: "anchor" },
+        handled: [{ label: "One", icon: "bell" }],
+      }),
+    new RegExp(`Label "${longHeadline}" does not fit its headline`)
+  );
+});
+
+test("two before problems at the same place are refused by name", () => {
+  assert.throws(
+    () =>
+      render({
+        kind: "before-after",
+        title: "t",
+        before: {
+          label: "Old",
+          problems: [
+            { label: "A", at: "code" },
+            { label: "B", at: "code" },
+          ],
+        },
+        by: { label: "Fix", icon: "car" },
+        after: { label: "New", parts: [{ label: "C", at: "tagline" }] },
+      }),
+    /Two problems share the place "code"/
+  );
+});
+
+test("two after parts at the same place are refused by name", () => {
+  assert.throws(
+    () =>
+      render({
+        kind: "before-after",
+        title: "t",
+        before: { label: "Old", problems: [{ label: "A", at: "code" }] },
+        by: { label: "Fix", icon: "car" },
+        after: {
+          label: "New",
+          parts: [
+            { label: "C", at: "tagline" },
+            { label: "D", at: "tagline" },
+          ],
+        },
+      }),
+    /Two parts share the place "tagline"/
+  );
+});
+
+// Chart layout at many items: the canvas height grows with the handled-item count (the "more" card counts as one
+// more item) instead of compressing the gap between cards until they overlap the sea or leave the canvas.
+function chartSpecWithHandled(count, more = false) {
+  const icons = ["mail", "calendar", "target", "car", "utensils", "plane", "bed", "train", "wifi"];
+  return {
+    kind: "fan",
+    style: "chart",
+    title: "t",
+    hub: { label: "Hub", icon: "anchor" },
+    handled: Array.from({ length: count }, (_, i) => ({ label: `Item ${i + 1}`, icon: icons[i % icons.length] })),
+    ...(more ? { more: true } : {}),
+  };
+}
+
+// Parses only what the fix promises: every handled (and "more") card's raw rect attributes, the first wave
+// path's baseline y, and the viewBox, all straight out of the rendered text.
+function chartLayoutFacts(svg) {
+  const [, w, h] = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
+  const [, waveY] = /<path class="w1" d="M-50,([\d.]+)/.exec(svg);
+  const cards = [...svg.matchAll(/<rect class="c-(?:navy|sea|ochre|plum)" x="(-?[\d.]+)" y="(-?[\d.]+)" width="([\d.]+)" height="([\d.]+)"/g)].map(
+    ([, x, y, cw, ch]) => ({ x: +x, y: +y, right: +x + +cw, bottom: +y + +ch })
+  );
+  return { width: +w, height: +h, waveY: +waveY, cards };
+}
+
+for (const count of [3, 5, 7, 9]) {
+  test(`a chart with ${count} handled items keeps every card above the wave line and inside the viewBox`, () => {
+    const svg = render(chartSpecWithHandled(count));
+    const { width, height, waveY, cards } = chartLayoutFacts(svg);
+    assert.equal(cards.length, count, `expected ${count} handled cards, found ${cards.length}`);
+    for (const c of cards) {
+      assert.ok(c.bottom < waveY, `card bottom ${c.bottom} is not above the wave line at ${waveY}`);
+      assert.ok(c.y >= 0 && c.bottom <= height, `card y-range [${c.y}, ${c.bottom}] is not inside the viewBox height ${height}`);
+      assert.ok(c.x >= 0 && c.right <= width, `card x-range [${c.x}, ${c.right}] is not inside the viewBox width ${width}`);
+    }
+  });
+}
+
+test("a chart with 9 handled items and more:true keeps the more card above the wave line and inside the viewBox too", () => {
+  const svg = render(chartSpecWithHandled(9, true));
+  const { width, height, waveY, cards } = chartLayoutFacts(svg);
+  assert.equal(cards.length, 10, `expected 9 handled cards plus the more card, found ${cards.length}`);
+  for (const c of cards) {
+    assert.ok(c.bottom < waveY, `card bottom ${c.bottom} is not above the wave line at ${waveY}`);
+    assert.ok(c.y >= 0 && c.bottom <= height, `card y-range [${c.y}, ${c.bottom}] is not inside the viewBox height ${height}`);
+    assert.ok(c.x >= 0 && c.right <= width, `card x-range [${c.x}, ${c.right}] is not inside the viewBox width ${width}`);
+  }
+});
+
+test("the pierless four-item chart still computes the same 820x500 canvas and 446 wave line", () => {
+  const spec = JSON.parse(readFileSync(join(examplesDir, "pierless", "pierless.hero.json"), "utf8"));
+  const svg = render(spec);
+  const { width, height, waveY } = chartLayoutFacts(svg);
+  assert.equal(width, 820, "the pierless canvas width must stay 820");
+  assert.equal(height, 500, "the pierless canvas height must stay 500");
+  assert.equal(waveY, 446, "the pierless wave line must stay at y=446");
+});
+
 test("a chart card subtitle too long for its card is refused by name", () => {
   const longSub = "This subtitle is also much too long to fit inside the card";
   assert.throws(
