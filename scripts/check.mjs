@@ -430,12 +430,24 @@ function checkReaderNouns(spec, repoDir) {
   const findings = [];
   if (!repoDir) return findings;
   const nouns = collectReaderNouns(repoDir);
+
+  // Two exemptions, both because the product's own name is meant to be said,
+  // not avoided: the hub label is the product's own mark (a fan spec's "hub",
+  // e.g. pierless's hub.label "Pierless", which will routinely equal a real
+  // folder or package name), and any label that equals the checked repo
+  // directory's own basename is the same case by the same reasoning. Every
+  // other label — source, sources, handled, deliverable, before/by/after —
+  // stays checked.
+  const hubLabel = isPlainObject(spec.hub) && typeof spec.hub.label === "string" ? spec.hub.label.trim().toLowerCase() : null;
+  const repoName = path.basename(path.resolve(repoDir)).toLowerCase();
+
   const seen = new Set();
   for (const label of labels(spec)) {
     if (typeof label !== "string") continue;
     const key = label.trim().toLowerCase();
     if (!key || seen.has(key)) continue;
     seen.add(key);
+    if (key === hubLabel || key === repoName) continue;
     if (nouns.has(key)) {
       findings.push(F("fail", `The label "${label}" is also a file, folder, export or function name in the repo.`, "Rename the label to something a reader would say, not the implementation's own name."));
     }
@@ -449,13 +461,22 @@ function checkReaderNouns(spec, repoDir) {
 
 const SINGLE_CUBIC = /^M\s*(-?[\d.]+)[,\s]+(-?[\d.]+)\s*C\s*(-?[\d.]+)[,\s]+(-?[\d.]+)\s+(-?[\d.]+)[,\s]+(-?[\d.]+)\s+(-?[\d.]+)[,\s]+(-?[\d.]+)\s*$/;
 
+// Fan links, in both styles, are the only curves this rule is about: flat
+// draws them with class "flow", chart with class "rope" (the twisted-rope
+// link under its dashed twist). A decorative curve like pierless's aside-to-
+// hub squiggle (class "line") is free to curl however it likes.
+const FAN_LINK_CLASS = /\b(?:flow|rope)\b/;
+
 function checkCurvesNoHook(svg) {
   const F = mkF("curves/no-hook");
   const findings = [];
-  const pathRe = /<path\b[^>]*?\bd="([^"]+)"[^>]*>/g;
+  const pathRe = /<path\b([^>]*)>/g;
   let m;
   while ((m = pathRe.exec(svg))) {
-    const d = m[1].trim();
+    const attrs = attrsOf(m[1]);
+    if (!attrs.d) continue;
+    if (!FAN_LINK_CLASS.test(attrs.class ?? "")) continue; // not a fan link; out of scope for this check
+    const d = attrs.d.trim();
     const mm = SINGLE_CUBIC.exec(d);
     if (!mm) continue; // not a single M...C path; out of scope for this check
     const [, x0, , x1, , x2, , x3] = mm.map(Number);

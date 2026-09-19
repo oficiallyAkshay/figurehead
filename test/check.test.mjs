@@ -234,6 +234,34 @@ test("register/reader-nouns fails when a label equals a directory, file or expor
   }
 });
 
+test("register/reader-nouns passes when the hub label equals a folder name (the product's own mark)", () => {
+  // Reproduces pierless: examples/pierless is a real folder, and pierless's
+  // hub.label is "Pierless" — the product's own name, meant to be said.
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-nouns-hub-"));
+  try {
+    mkdirSync(join(dir, "pierless"));
+    const spec = {
+      hub: { label: "Pierless", icon: "anchor" },
+      handled: [{ label: "Ship it" }, { label: "Go fast" }],
+    };
+    assert.deepEqual(_internal.checkReaderNouns(spec, dir), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("register/reader-nouns passes when a label equals the checked repo directory's own basename", () => {
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-nouns-reponame-"));
+  try {
+    const projectDir = join(dir, "pierless");
+    mkdirSync(projectDir);
+    const spec = { source: { label: "Pierless", icon: "git-merge" }, handled: [{ label: "Ship it" }] };
+    assert.deepEqual(_internal.checkReaderNouns(spec, projectDir), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // curves/no-hook
 // ---------------------------------------------------------------------------
@@ -242,10 +270,16 @@ test("curves/no-hook passes for tidy-inbox's real fan curves", () => {
   assert.deepEqual(_internal.checkCurvesNoHook(tidyInboxSvg), []);
 });
 
-test("curves/no-hook fails when a control point is not between its endpoints", () => {
-  const svg = '<svg><path d="M100,50 C 60,50 40,60 120,60"/></svg>';
+test("curves/no-hook fails when a fan link's control point is not between its endpoints", () => {
+  const svg = '<svg><path class="flow" d="M100,50 C 60,50 40,60 120,60"/></svg>';
   const findings = fails(_internal.checkCurvesNoHook(svg));
   assert.equal(findings.length, 1);
+});
+
+test("curves/no-hook ignores a hooked curve that isn't a fan link", () => {
+  // Reproduces pierless's aside-to-hub squiggle: class "line", not "flow"/"rope".
+  const svg = '<svg><path class="line" d="M100,50 C 60,50 40,60 120,60"/></svg>';
+  assert.deepEqual(_internal.checkCurvesNoHook(svg), []);
 });
 
 // ---------------------------------------------------------------------------
