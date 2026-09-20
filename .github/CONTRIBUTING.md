@@ -31,10 +31,12 @@ Node 20 or newer. Nothing to install. `npm run test:coverage` needs Node 22 or n
 | Job | What it proves |
 | --- | --- |
 | `checks` | the same hooks a contributor runs locally (gitleaks, actionlint, zizmor), every `uses:` pin verified against the commit its version comment names (pinact), a secrets scan over the whole history, every script parses |
-| `test` on Node 20 and 22 | the suite, which rebuilds every example in `examples/` from its spec and fails on a byte of drift; the Node 22 leg also gates on coverage of `scripts/**` staying at or above the measured floor (94% lines, 88% branches, 98% functions) |
+| `test` on Node 20 and 22 | the suite, which rebuilds every example in `examples/` from its spec and fails on a byte of drift; the Node 22 leg also gates on coverage of `scripts/**` staying at 100% lines, 100% branches and 100% functions |
 | `ci` | the one context the branch ruleset requires; green only when both jobs are |
 
 `clonometer` runs daily and keeps a lifetime clone count on the `badges` branch. Nothing here phones home from a user's machine. Its `TRAFFIC_TOKEN` secret is a fine-grained token scoped to this one repository, with Contents write and Administration read.
+
+`dependabot-auto-merge` runs on every pull request and arms `gh pr merge --auto --rebase` for the ones Dependabot opened; it never runs for anyone else's pull request, and arming auto-merge does not itself pass anything, since `ci` above still has to go green, coverage gate included, before GitHub merges it. It exists because a scheduled workflow on a public repository (`clonometer` here) is disabled after 60 days without a commit, and a Dependabot bump landing on its own keeps that clock from running out unattended.
 
 ## A change must satisfy
 
