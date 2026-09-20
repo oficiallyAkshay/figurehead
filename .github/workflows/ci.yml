@@ -31,13 +31,23 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       # The same hooks contributors run locally, so CI and the pre-commit
-      # config cannot drift: gitleaks and actionlint. gitleaks's own
+      # config cannot drift: gitleaks, actionlint and zizmor. gitleaks's own
       # pre-commit hook only sees the working tree; the secrets scan step
       # below covers the full history a hook cannot see. pipx ships
       # preinstalled on the runner image, so this needs no extra setup step
       # for a repo with no other Python use.
       - name: pre-commit hooks
         run: pipx run pre-commit run --all-files --show-diff-on-failure
+      # pinact has no pre-commit hook of its own to pin to, so it runs as its
+      # own step: every `uses:` must be a full commit SHA, and that SHA must
+      # actually be the commit the trailing version comment names, never a
+      # hand-edited or stale one. fix: "false" only checks; it never rewrites
+      # a workflow file or pushes a commit.
+      - name: verify actions are pinned
+        uses: suzuki-shunsuke/pinact-action@896d595f299e71d65b9d28349d6956abe144390a # v3.0.0
+        with:
+          fix: "false"
+          verify: "true"
       - name: secrets scan
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
