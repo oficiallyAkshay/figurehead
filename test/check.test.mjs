@@ -734,6 +734,36 @@ test("spec/agrees still fails when a label split across text elements is missing
 });
 
 // ---------------------------------------------------------------------------
+// Tag stripping runs on already-decoded text (CodeQL js/incomplete-multi-character-sanitization):
+// stripping before unescaping XML entities would let a fake tag written as "&lt;script&gt;" pass
+// the strip pass untouched (it has no literal "<"/">" yet) and only turn into a real "<script>"
+// afterward, once unescapeXml runs. Both call sites (spec/agrees's text collector and
+// geometry/inside's text-width reader) now decode first, then strip, in that order.
+// ---------------------------------------------------------------------------
+
+test("stripTags removes markup in one pass and stays stable if run again (looping to a fixed point rather than a single pass)", () => {
+  const nested = "before <b>bold <i>italic</i></b> after";
+  const once = _internal.stripTags(nested);
+  assert.equal(once, "before bold italic after");
+  assert.equal(_internal.stripTags(once), once, "stripping already-stripped text must be a no-op");
+});
+
+test('spec/agrees fails a label that only reads as a literal tag ("<mark>highlighted</mark>") after XML-entity decoding, rather than letting the decode smuggle it past the tag strip as this would have before the strip/decode order was fixed', () => {
+  // Before the fix, the svg's text content was tag-stripped BEFORE unescapeXml ran: the escaped
+  // "&lt;mark&gt;...&lt;/mark&gt;" has no literal "<"/">" at strip time, so nothing was stripped,
+  // and decoding afterward turned it into literal "<mark>highlighted</mark>" text that survived
+  // into the comparison haystack whole -- so this exact spec label would have been found, and
+  // this test would have failed (no "spec/agrees" fail finding). Decoding first and stripping
+  // after means the tags are gone by the time the label is compared, so the literal-angle-bracket
+  // label is correctly reported as not present.
+  const spec = { title: "t", label: "<mark>highlighted</mark>" };
+  const svg = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1">', '<title id="t1">t</title>', "<text>Some &lt;mark&gt;highlighted&lt;/mark&gt; text</text>", "</svg>"].join("\n");
+  const findings = fails(_internal.checkSpecAgrees(spec, svg));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /<mark>highlighted<\/mark>/);
+});
+
+// ---------------------------------------------------------------------------
 // register/reader-nouns (only runs with --repo)
 // ---------------------------------------------------------------------------
 
