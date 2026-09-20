@@ -77,8 +77,19 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       # The goldens live inside the suite: every example is rendered from its
-      # spec and compared byte for byte, so drift fails here.
-      - run: npm test
+      # spec and compared byte for byte, so drift fails here. The coverage
+      # gate needs --test-coverage-lines/--test-coverage-branches/
+      # --test-coverage-functions, which node --help only lists starting
+      # partway through the Node 22 line (Node 20's latest patch, 20.20.2,
+      # still rejects them as "bad option"), so only the Node 22 leg runs
+      # the coverage-gated command; Node 20 still proves the suite passes on
+      # the declared floor.
+      - name: test
+        if: matrix.node != '22'
+        run: npm test
+      - name: test with coverage gate
+        if: matrix.node == '22'
+        run: npm run test:coverage
 
   # The one context the branch ruleset requires.
   ci:
