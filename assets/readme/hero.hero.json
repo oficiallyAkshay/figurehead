@@ -1,0 +1,17 @@
+{
+  "kind": "fan",
+  "style": "chart",
+  "title": "figurehead writes a concept statement, picks a shape and a style, then renders the hero from a spec committed beside the SVG: every label the spec names must appear in the picture, every label must fit its card, nothing may leave the canvas, and no label may match the repo's own code before it ships",
+  "headline": "figurehead draws the reader's day.",
+  "subhead": "one concept, one shape, one spec, checked before it ships",
+  "source": { "label": "Commit the spec", "icon": "terminal", "note": "spec and SVG, together" },
+  "hub": { "label": "figurehead", "icon": "anchor" },
+  "handled": [
+    { "label": "Speaks your words", "sub": "every label matches the spec", "icon": "badge-check", "theme": "navy" },
+    { "label": "Fits every time", "sub": "widths measured, not eyeballed", "icon": "target", "theme": "sea" },
+    { "label": "Never drifts", "sub": "same spec, same bytes, always", "icon": "zap", "theme": "ochre" },
+    { "label": "Stays in frame", "sub": "never leaves the frame, checked", "icon": "shield", "theme": "plum" },
+    { "label": "Refuses jargon", "sub": "your own file names are refused", "icon": "ban", "theme": "navy" }
+  ],
+  "aside": "not just for show: it still checks every line."
+}
