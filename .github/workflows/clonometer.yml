@@ -12,6 +12,9 @@ jobs:
   count:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Everything the job does runs through its own TRAFFIC_TOKEN; the
+    # built-in GITHUB_TOKEN is never used, so the job needs none of it.
+    permissions: {}
     steps:
       - uses: oficiallyAkshay/clonometer@2c82a8779a68d2babb1e5e856d2ae69253dcd611 # pinned commit
         with:
