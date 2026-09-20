@@ -16,7 +16,7 @@ jobs:
     # built-in GITHUB_TOKEN is never used, so the job needs none of it.
     permissions: {}
     steps:
-      - uses: oficiallyAkshay/clonometer@2c82a8779a68d2babb1e5e856d2ae69253dcd611 # pinned commit
+      - uses: oficiallyAkshay/clonometer@208c2cc913d1d1ea7f76f4f9cce759073cd744f5 # v1.0.1
         with:
           token: ${{ secrets.TRAFFIC_TOKEN }}
           metrics: clones,views
