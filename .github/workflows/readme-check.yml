@@ -26,3 +26,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: oficiallyAkshay/readmerlin@65882c2047e9170dbe2132ada0f38c4c127e5b91 # v1.0.0
+        with:
+          # Run the count-source commands from readmerlin.json so every
+          # count badge is verified on every push, not just read from disk.
+          exec: "true"
