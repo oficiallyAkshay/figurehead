@@ -1,0 +1,14 @@
+# The same hooks CI runs, run here through pre-commit. gitleaks and
+# actionlint are standalone tools pre-commit installs on its own; figurehead
+# has no other language pre-commit would gate, since the suite already runs
+# in CI.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint

@@ -5,38 +5,44 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: read
+permissions: {}
 
 # A second push to a pull request supersedes the first, so cancel the run it
-# replaced. Pushes to main are never cancelled.
+# replaced. Pushes to main key on the commit instead, so a rapid second push
+# gets its own group rather than dropping the first push's run.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Everything that reads the tree without running the suite: secrets over the
-  # whole history, workflow lint, and a syntax pass over every script.
+  # Everything that reads the tree without running the suite: hooks and
+  # secrets over the whole history, and a syntax pass over every script.
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
+      # gitleaks reads pull request metadata to report what it finds.
       pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # gitleaks scans the whole history, not the working tree.
           fetch-depth: 0
+          persist-credentials: false
+      # The same hooks contributors run locally, so CI and the pre-commit
+      # config cannot drift: gitleaks and actionlint. gitleaks's own
+      # pre-commit hook only sees the working tree; the secrets scan step
+      # below covers the full history a hook cannot see. pipx ships
+      # preinstalled on the runner image, so this needs no extra setup step
+      # for a repo with no other Python use.
+      - name: pre-commit hooks
+        run: pipx run pre-commit run --all-files --show-diff-on-failure
       - name: secrets scan
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: workflow lint
-        uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
-        with:
-          version: "1.7.12"
-          files: ".github/workflows/*.yml"
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
       - name: every script parses
@@ -47,13 +53,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
         node: ["20", "22"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ matrix.node }}
       # The goldens live inside the suite: every example is rendered from its
@@ -66,6 +76,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}
     steps:
       - name: gate
         env:
