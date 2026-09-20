@@ -36,6 +36,22 @@ const unescapeXml = (s) =>
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, "&");
 
+// Strips markup tags from already-XML-unescaped text (callers must unescapeXml first: an
+// entity-encoded fake tag like "&lt;script&gt;" contains no literal "<"/">" at strip time, so a
+// strip-then-unescape order would let it survive stripping and only turn into a real tag
+// afterward -- CodeQL's js/incomplete-multi-character-sanitization). Loops until a pass removes
+// nothing, rather than a single pass, as defense-in-depth against any future tag-shaped
+// construction a single pass alone would miss.
+function stripTags(s) {
+  let prev;
+  let out = String(s);
+  do {
+    prev = out;
+    out = prev.replace(/<[^>]*>/g, "");
+  } while (out !== prev);
+  return out;
+}
+
 // widthsUrl is injectable so a test can point this at a broken or missing
 // file without touching the repo's own scripts/widths.json; real callers
 // never pass it, so they always get the file this module ships beside.
@@ -447,9 +463,9 @@ function checkSpecAgrees(spec, svg) {
     // kept as defense-in-depth against blockRe growing a third, ungrouped alternative.
     const matched = m[1] ?? m[2];
     /* node:coverage disable */
-    const raw = (matched ?? "").replace(/<[^>]*>/g, "");
+    const decoded = unescapeXml(matched ?? "");
     /* node:coverage enable */
-    blocks.push(unescapeXml(raw));
+    blocks.push(stripTags(decoded));
   }
   const haystack = collapseWs(blocks.join(" "));
 
@@ -758,7 +774,7 @@ function checkGeometryInside(svg, widths) {
       const fontSize = a["font-size"] ? Number(a["font-size"]) : null;
       const faceKey = faceKeyFor(a.class, fontSize, rules, a);
       if (faceKey && faces[faceKey]) {
-        const text = collapseWs(unescapeXml(textInner.replace(/<[^>]*>/g, "")));
+        const text = collapseWs(stripTags(unescapeXml(textInner)));
         const width = measureLabel(faces, faceKey, text);
         const x = Number(a.x ?? 0) + cum.dx + own.dx;
         const y = Number(a.y ?? 0) + cum.dy + own.dy;
@@ -952,6 +968,7 @@ export const _internal = {
   loadIconNames,
   loadWidths,
   measureLabel,
+  stripTags,
 };
 
 // ---------------------------------------------------------------------------
