@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oficiallyAkshay/readmerlin/main/readmerlin.schema.json",
+  "compare": {
+    "repos": [
+      "kyechan99/capsule-render",
+      "wei/socialify",
+      "eli64s/readme-ai"
+    ],
+    "rows": [
+      "Committed spec",
+      "Byte-for-byte check",
+      "Runs offline",
+      "Installation",
+      "Model"
+    ]
+  }
+}
