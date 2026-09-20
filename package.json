@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=scripts/** --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 test/*.test.mjs"
+    "test:coverage": "mkdir -p coverage && node --test --experimental-test-coverage --test-coverage-include=scripts/** --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.test.mjs"
   },
   "repository": {
     "type": "git",

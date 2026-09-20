@@ -65,6 +65,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      # Codecov uploads with an OIDC token rather than a repository secret.
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +92,19 @@ jobs:
       - name: test with coverage gate
         if: matrix.node == '22'
         run: npm run test:coverage
+
+      # One report per run, so only the Node 22 leg uploads. The upload is
+      # tokenless: it authenticates with the job's OIDC identity, which
+      # Codecov accepts from a public repository. A Codecov outage must not
+      # block a merge, so the step reports and moves on rather than failing
+      # the job.
+      - name: upload coverage
+        if: matrix.node == '22'
+        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
+        with:
+          use_oidc: true
+          files: coverage/lcov.info
+          fail_ci_if_error: false
 
   # The one context the branch ruleset requires.
   ci:
