@@ -1,6 +1,6 @@
 # Contributing
 
-figurehead is an agent skill: the words in `SKILL.md` and `references/` are the product, and the scripts exist so a wrong picture cannot ship. Changes to the words need a reason from a real hero; changes to the scripts need a test. [AGENTS.md](../AGENTS.md) at the repo root holds the block an agent reads first.
+figurehead is an agent skill: the words in `SKILL.md` and `references/` are the product, and the scripts exist so a wrong picture cannot ship. Changes to the words need a reason from a real hero; changes to the scripts need a test. [AGENTS.md](../AGENTS.md) at the repo root holds the block an agent reads first, and [SECURITY.md](../SECURITY.md) holds how to report a vulnerability and what this repository does and does not do.
 
 ## How it ships
 
