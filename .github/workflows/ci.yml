@@ -58,7 +58,7 @@ jobs:
       - name: every script parses
         run: for f in scripts/*.mjs; do node --check "$f"; done
 
-  # The declared floor and the newest release. There is nothing to install:
+  # 100% on every metric and the newest release. There is nothing to install:
   # the skill has no dependencies, so there is no npm ci and no lockfile.
   test:
     runs-on: ubuntu-latest
@@ -82,8 +82,8 @@ jobs:
       # --test-coverage-functions, which node --help only lists starting
       # partway through the Node 22 line (Node 20's latest patch, 20.20.2,
       # still rejects them as "bad option"), so only the Node 22 leg runs
-      # the coverage-gated command; Node 20 still proves the suite passes on
-      # the declared floor.
+      # the coverage-gated command; Node 20 still proves the suite passes at
+      # 100%.
       - name: test
         if: matrix.node != '22'
         run: npm test
