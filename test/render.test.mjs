@@ -35,6 +35,14 @@ const examples = readdirSync(examplesDir).filter((name) => statSync(join(example
 const cliPath = resolve(root, "scripts", "figurehead.mjs");
 const checksInstalled = existsSync(resolve(root, "scripts", "check.mjs"));
 
+// See test/check.test.mjs's own NO_COVERAGE_ENV for why: node --test's coverage run points
+// NODE_V8_COVERAGE at a directory, every spawned child inherits it by default, and the CLI's own
+// child process would otherwise write coverage files into that same directory and reintroduce the
+// run-to-run variance the coverage gate used to show. This test's own in-process figurehead.mjs
+// import already covers runCli's branches deterministically; this spawnSync stays as a real,
+// unmeasured end-to-end smoke test of the actual `node scripts/figurehead.mjs check` invocation.
+const NO_COVERAGE_ENV = { ...process.env, NODE_V8_COVERAGE: "" };
+
 for (const name of examples) {
   const specPath = join(examplesDir, name, `${name}.hero.json`);
   const svgPath = join(examplesDir, name, `${name}.svg`);
@@ -485,6 +493,198 @@ for (const { name, fn, tag } of componentCases) {
   });
 }
 
+test("rawGlyph omits the scale() transform when drawn at the icon's own native box size", () => {
+  // Every other rawGlyph call in this suite and in the real examples scales an icon down to
+  // fit its button, so the "size equals the icon's own box, no scale needed" branch is
+  // otherwise never exercised. "mail"'s box is 28.
+  const out = rawGlyph("mail", 0, 0, 28, 'fill="none"');
+  assert.ok(!out.includes("scale("), `expected no scale() at native size, got: ${out}`);
+});
+
+// ---------------------------------------------------------------------------
+// validateSpec and renderer edge branches every committed example and every test above
+// happens not to exercise: an object field that is present but not an object, an omitted
+// optional array defaulting through its own "?? []", an out-of-vocabulary handled theme, a
+// before/after place name the page does not have an anchor for, a singular "source" (rather
+// than "sources") in the flat style, more than two flat-style sources, a flat or window
+// deliverable with no "heading" (falling back to "label") or of the non-table kind, a chart
+// with zero handled items, and a window spec with no "handled" array at all.
+// ---------------------------------------------------------------------------
+
+test("a before-after spec with a non-object item in before.problems is not silently accepted (its unknown-field check is skipped, but rendering still fails on it downstream)", () => {
+  assert.throws(() =>
+    render({
+      kind: "before-after",
+      title: "t",
+      before: { label: "Old", problems: [null] },
+      by: { label: "Fix", icon: "car" },
+      after: { label: "New", parts: [{ label: "C", at: "tagline" }] },
+    })
+  );
+});
+
+test("a fan spec with no \"handled\" key at all is not silently accepted (validateSpec's own optional-field walk defaults it to none, but rendering still needs it)", () => {
+  assert.throws(() =>
+    render({
+      title: "t",
+      sources: [{ label: "Inbox", icon: "mail" }],
+      deliverable: { label: "one claim", kind: "table" },
+    })
+  );
+});
+
+test("a handled item with a theme outside the four known themes is refused by name", () => {
+  assert.throws(
+    () =>
+      render({
+        title: "t",
+        sources: [{ label: "Inbox", icon: "mail" }],
+        handled: [{ label: "a", icon: "car", theme: "chartreuse" }],
+        deliverable: { label: "one claim", kind: "table" },
+      }),
+    /Unknown theme "chartreuse"/
+  );
+});
+
+test("a before-after spec with no \"before\" key at all is not silently accepted (assertDistinctAt's own optional-field walk defaults it to none, but rendering still needs it)", () => {
+  assert.throws(() =>
+    render({
+      kind: "before-after",
+      title: "t",
+      by: { label: "Fix", icon: "car" },
+      after: { label: "New", parts: [{ label: "C", at: "tagline" }] },
+    })
+  );
+});
+
+test("a before-after spec with a \"before\" object present but no \"problems\" key is not silently accepted (validateSpec's own optional-field walk defaults it to none, but rendering still needs it)", () => {
+  assert.throws(() =>
+    render({
+      kind: "before-after",
+      title: "t",
+      before: { label: "Old" },
+      by: { label: "Fix", icon: "car" },
+      after: { label: "New", parts: [{ label: "C", at: "tagline" }] },
+    })
+  );
+});
+
+test("a before-after spec with an \"after\" object present but no \"parts\" key is not silently accepted (validateSpec's own optional-field walk defaults it to none, but rendering still needs it)", () => {
+  assert.throws(() =>
+    render({
+      kind: "before-after",
+      title: "t",
+      before: { label: "Old", problems: [{ label: "A", at: "code" }] },
+      by: { label: "Fix", icon: "car" },
+      after: { label: "New" },
+    })
+  );
+});
+
+test("a chart spec with no \"handled\" key at all still renders (its own optional-field walk defaults it to none)", () => {
+  const svg = render({
+    title: "t",
+    style: "chart",
+    source: { label: "Go", icon: "git-merge" },
+    hub: { label: "Hub", icon: "anchor" },
+  });
+  assert.match(svg, /<svg\b/);
+});
+
+test("a before.problems place the before page has no anchor for is refused by name", () => {
+  assert.throws(
+    () =>
+      render({
+        kind: "before-after",
+        title: "t",
+        before: { label: "Old", problems: [{ label: "A", at: "nowhere" }] },
+        by: { label: "Fix", icon: "car" },
+        after: { label: "New", parts: [{ label: "C", at: "tagline" }] },
+      }),
+    /Unknown place "nowhere" on the before page/
+  );
+});
+
+test("an after.parts place the after page has no anchor for is refused by name", () => {
+  assert.throws(
+    () =>
+      render({
+        kind: "before-after",
+        title: "t",
+        before: { label: "Old", problems: [{ label: "A", at: "code" }] },
+        by: { label: "Fix", icon: "car" },
+        after: { label: "New", parts: [{ label: "C", at: "nowhere" }] },
+      }),
+    /Unknown part "nowhere" on the after page/
+  );
+});
+
+test("a flat fan spec drawn with a singular \"source\" (rather than a \"sources\" array) still renders one source card", () => {
+  const svg = render({
+    title: "t",
+    source: { label: "Inbox", icon: "mail" },
+    handled: [{ label: "a", icon: "car" }],
+    deliverable: { label: "one claim", kind: "table" },
+  });
+  assert.match(svg, /Inbox/);
+});
+
+test("a flat fan spec with three sources uses the wider (more than two) card gap without overlapping", () => {
+  const svg = render({
+    title: "t",
+    sources: [
+      { label: "Inbox", icon: "mail" },
+      { label: "Calendar", icon: "calendar" },
+      { label: "Slack", icon: "bell" },
+    ],
+    handled: [{ label: "a", icon: "car" }],
+    deliverable: { label: "one claim", kind: "table" },
+  });
+  const cards = [...svg.matchAll(/<text class="title"[^>]*>(Inbox|Calendar|Slack)</g)];
+  assert.equal(cards.length, 3, "expected all three source labels drawn");
+});
+
+test("a flat fan deliverable of kind \"document\" (not \"table\") draws the document shape", () => {
+  const svg = render({
+    title: "t",
+    sources: [{ label: "Inbox", icon: "mail" }],
+    handled: [{ label: "a", icon: "car" }],
+    deliverable: { label: "one claim", kind: "document" },
+  });
+  assert.match(svg, /one claim/);
+});
+
+test("a flat fan deliverable with no \"heading\" falls back to its \"label\"", () => {
+  const svg = render({
+    title: "t",
+    sources: [{ label: "Inbox", icon: "mail" }],
+    handled: [{ label: "a", icon: "car" }],
+    deliverable: { label: "one claim", kind: "table" },
+  });
+  assert.match(svg, /one claim/);
+});
+
+test("a chart spec with zero handled items still renders (the hub keeps its default vertical anchor)", () => {
+  const svg = render({
+    title: "t",
+    style: "chart",
+    source: { label: "Go", icon: "git-merge" },
+    hub: { label: "Hub", icon: "anchor" },
+    handled: [],
+  });
+  assert.match(svg, /<svg\b/);
+});
+
+test("a window spec with no \"handled\" key at all still renders (both of its own optional-field walks default it to none)", () => {
+  const svg = render(windowSpec({ handled: undefined }));
+  assert.match(svg, /<svg\b/);
+});
+
+test("a window deliverable with no \"heading\" falls back to its \"label\"", () => {
+  const svg = render(windowSpec({ deliverable: { label: "one PDF", backing: "back" } }));
+  assert.match(svg, /one PDF/);
+});
+
 // End-to-end: actually spawns `node scripts/figurehead.mjs check`, the way a real caller would, rather than
 // calling an imported function. This is what caught the module ever having deadlocked on Node's own top-level
 // await warning (exit code 13) instead of running the checks and exiting 0 or 1.
@@ -499,6 +699,7 @@ test(
   () => {
     const passing = spawnSync(process.execPath, [cliPath, "check", join(examplesDir, "readmerlin", "readmerlin.hero.json"), join(examplesDir, "readmerlin", "readmerlin.svg"), "--repo", root], {
       encoding: "utf8",
+      env: NO_COVERAGE_ENV,
     });
     assert.equal(passing.status, 0, `expected exit 0 on a passing pair, got ${passing.status}. stderr: ${passing.stderr}`);
     for (const line of passing.stdout.split("\n").filter(Boolean)) {
@@ -515,7 +716,7 @@ test(
       spec.notAKnownField = true;
       writeFileSync(badSpecPath, JSON.stringify(spec));
 
-      const failing = spawnSync(process.execPath, [cliPath, "check", badSpecPath, join(examplesDir, "readmerlin", "readmerlin.svg")], { encoding: "utf8" });
+      const failing = spawnSync(process.execPath, [cliPath, "check", badSpecPath, join(examplesDir, "readmerlin", "readmerlin.svg")], { encoding: "utf8", env: NO_COVERAGE_ENV });
       assert.equal(failing.status, 1, `expected exit 1 on a failing pair, got ${failing.status}. stderr: ${failing.stderr}`);
       const lines = failing.stdout.split("\n").filter(Boolean);
       assert.ok(lines.length > 0, "expected at least one finding line for a spec with an invalid style and an unknown field");
