@@ -8,6 +8,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/license-MIT-2f6f4e?logo=opensourceinitiative&logoColor=white"></a>
+  <a href="https://codecov.io/gh/oficiallyAkshay/figurehead"><img alt="coverage" src="https://img.shields.io/codecov/c/github/oficiallyAkshay/figurehead?logo=codecov&logoColor=white"></a>
   <a href="https://github.com/oficiallyAkshay/clonometer"><img alt="clones of this repository, last seven days and all time" src="https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/oficiallyAkshay/figurehead/badges/clones.json&query=$.badge&label=clones&logo=github&logoColor=white"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/oficiallyAkshay/figurehead"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/oficiallyAkshay/figurehead/badge"></a>
 </p>
