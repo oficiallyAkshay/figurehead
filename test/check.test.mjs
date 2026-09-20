@@ -5,8 +5,8 @@
 // builder's brief.
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, chmodSync } from "node:fs";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
@@ -16,6 +16,19 @@ import { render } from "../scripts/figurehead.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const readJson = (p) => JSON.parse(readFileSync(resolve(root, p), "utf8"));
 const readText = (p) => readFileSync(resolve(root, p), "utf8");
+
+// `node --test --experimental-test-coverage` points NODE_V8_COVERAGE at a
+// directory and every child process inherits that env var by default, so an
+// un-overridden spawnSync here would have the CLI's own child process write
+// its own coverage files into the same directory. Node then merges whatever
+// happened to finish flushing by the time this process reads its own coverage,
+// which is exactly the 0.3-1.3 point run-to-run variance the coverage gate
+// used to show. Every spawnSync below the CLI itself instead runs unmeasured
+// (real behaviour is still checked end to end); test/check.test.mjs's and
+// test/render.test.mjs's in-process runCli() tests are what the coverage
+// number is measured against, deterministically, since they run in this
+// process.
+const NO_COVERAGE_ENV = { ...process.env, NODE_V8_COVERAGE: "" };
 
 const readmerlinSpec = readJson("examples/readmerlin/readmerlin.hero.json");
 const readmerlinSvg = readText("examples/readmerlin/readmerlin.svg");
@@ -93,6 +106,163 @@ test("spec/shape fails an invalid, present kind", () => {
   assert.ok(findings.some((f) => /"kind" is "sideways"/.test(f.message)));
 });
 
+test("spec/shape fails once, naming the spec itself, when the spec is not a JSON object at all (a string)", () => {
+  const findings = _internal.checkSpecShape("not an object");
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].id, "spec/shape");
+  assert.equal(findings[0].level, "fail");
+  assert.match(findings[0].message, /The spec is not a JSON object/);
+});
+
+test("spec/shape fails once, naming the spec itself, when the spec is an array rather than an object", () => {
+  const findings = _internal.checkSpecShape([1, 2, 3]);
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /The spec is not a JSON object/);
+});
+
+test('spec/shape fails when "headline" is present but not a string', () => {
+  const findings = fails(_internal.checkSpecShape({ title: "t", source: { label: "a", icon: "mail" }, headline: 123 }));
+  assert.ok(findings.some((f) => /"headline" is present but is not a string/.test(f.message)));
+});
+
+test('spec/shape fails when "source" is present but not an object (a string)', () => {
+  const findings = fails(_internal.checkSpecShape({ title: "t", source: "not an object" }));
+  assert.ok(findings.some((f) => /"source" is not an object/.test(f.message)));
+});
+
+test('spec/shape fails when a required field on "source" is present but blank (whitespace only)', () => {
+  const findings = fails(_internal.checkSpecShape({ title: "t", source: { label: "   ", icon: "mail" } }));
+  assert.ok(findings.some((f) => /"source" is missing "label"/.test(f.message)));
+});
+
+test('spec/shape fails when "source" has a field its own vocabulary does not allow', () => {
+  const findings = fails(_internal.checkSpecShape({ title: "t", source: { label: "a", icon: "mail", extra: "nope" } }));
+  assert.ok(findings.some((f) => /"source" has an unknown field "extra"/.test(f.message)));
+});
+
+test('spec/shape skips a non-object before.problems item rather than crashing, and still catches a missing "at" on a well-formed one', () => {
+  const spec = {
+    kind: "before-after",
+    title: "t",
+    before: {
+      label: "before",
+      problems: ["not an object", { label: "Missing at" }, { label: "A problem", at: "fold" }],
+    },
+    by: { label: "by", icon: "mail" },
+    after: { label: "after", parts: [{ label: "A part", at: "top" }] },
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /"before\.problems\[0\]" is not an object/.test(f.message)));
+  assert.ok(findings.some((f) => /"before\.problems\[1\]" is missing "at"/.test(f.message)));
+  assert.ok(!findings.some((f) => /share the same "at"/.test(f.message)), "the malformed items must not be treated as sharing a place with anything");
+});
+
+test('a before-after spec missing "before" entirely is refused by name', () => {
+  const spec = { kind: "before-after", title: "t", by: { label: "by", icon: "mail" }, after: { label: "after", parts: [{ label: "A", at: "top" }] } };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /A before-after spec needs "before"/.test(f.message)));
+});
+
+test('a before-after spec whose "before.problems" is present but empty is refused by name', () => {
+  const spec = {
+    kind: "before-after",
+    title: "t",
+    before: { label: "before", problems: [] },
+    by: { label: "by", icon: "mail" },
+    after: { label: "after", parts: [{ label: "A", at: "top" }] },
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /"before.problems" must be a non-empty array/.test(f.message)));
+});
+
+test('a before-after spec missing "by" entirely is refused by name', () => {
+  const spec = {
+    kind: "before-after",
+    title: "t",
+    before: { label: "before", problems: [{ label: "A", at: "top" }] },
+    after: { label: "after", parts: [{ label: "A", at: "top" }] },
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /A before-after spec needs "by"/.test(f.message)));
+});
+
+test('a before-after spec missing "after" entirely is refused by name', () => {
+  const spec = {
+    kind: "before-after",
+    title: "t",
+    before: { label: "before", problems: [{ label: "A", at: "top" }] },
+    by: { label: "by", icon: "mail" },
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /A before-after spec needs "after"/.test(f.message)));
+});
+
+test('a before-after spec whose "after.parts" is present but not an array (a string) is refused by name', () => {
+  const spec = {
+    kind: "before-after",
+    title: "t",
+    before: { label: "before", problems: [{ label: "A", at: "top" }] },
+    by: { label: "by", icon: "mail" },
+    after: { label: "after", parts: "not an array" },
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /"after.parts" must be a non-empty array/.test(f.message)));
+});
+
+test('a fan spec whose "sources" array has more than three items is refused by name', () => {
+  const spec = {
+    title: "t",
+    sources: [
+      { label: "a", icon: "mail" },
+      { label: "b", icon: "calendar" },
+      { label: "c", icon: "plane" },
+      { label: "d", icon: "car" },
+    ],
+    handled: [
+      { label: "a", icon: "mail" },
+      { label: "b", icon: "car" },
+      { label: "c", icon: "plane" },
+    ],
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /"sources" must be an array of one to three items/.test(f.message)));
+});
+
+test('a fan spec whose "handled" is present but not an array (a string) is refused by name', () => {
+  const findings = fails(_internal.checkSpecShape({ title: "t", source: { label: "a", icon: "mail" }, handled: "not an array" }));
+  assert.ok(findings.some((f) => /"handled" must be an array of three to nine items/.test(f.message)));
+});
+
+test('a fan spec whose "more" is present but not a boolean is refused by name', () => {
+  const spec = {
+    title: "t",
+    source: { label: "a", icon: "mail" },
+    handled: [
+      { label: "a", icon: "mail" },
+      { label: "b", icon: "car" },
+      { label: "c", icon: "plane" },
+    ],
+    more: "yes",
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /"more" must be a boolean/.test(f.message)));
+});
+
+test('a fan spec whose "deliverable.kind" is present but not "document" or "table" is refused by name', () => {
+  const spec = {
+    title: "t",
+    source: { label: "a", icon: "mail" },
+    handled: [
+      { label: "a", icon: "mail" },
+      { label: "b", icon: "car" },
+      { label: "c", icon: "plane" },
+    ],
+    deliverable: { label: "one thing", kind: "spreadsheet" },
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => /"deliverable.kind" is "spreadsheet"/.test(f.message)));
+});
+
 test("spec/shape fails handled outside three to nine items and a bad theme", () => {
   const spec = {
     kind: "fan",
@@ -124,6 +294,21 @@ test("spec/shape fails when two before.problems items share the same \"at\"", ()
   };
   const findings = fails(_internal.checkSpecShape(spec));
   assert.ok(findings.some((f) => f.message.includes('"before.problems"') && f.message.includes('"fold"')));
+});
+
+test('spec/shape names a shared "at" by its positional index (e.g. "before.problems[1]") when the item sharing it has no "label" of its own', () => {
+  const spec = {
+    kind: "before-after",
+    title: "t",
+    before: {
+      label: "before",
+      problems: [{ label: "A problem", at: "fold" }, { at: "fold" }],
+    },
+    by: { label: "by", icon: "mail" },
+    after: { label: "after", parts: [{ label: "A part", at: "top" }] },
+  };
+  const findings = fails(_internal.checkSpecShape(spec));
+  assert.ok(findings.some((f) => f.message.includes('"before.problems"') && f.message.includes("before.problems[1]")));
 });
 
 test("spec/shape fails when two after.parts items share the same \"at\"", () => {
@@ -277,6 +462,62 @@ test("icons/known fails for an icon not in the subset", async () => {
   assert.match(findings[0].message, /"nope"/);
 });
 
+test('icons/known collects icons from a spec with no "sources" key at all (only "source")', async () => {
+  const iconNames = await _internal.loadIconNames();
+  assert.deepEqual(_internal.checkIconsKnown({ source: { label: "a", icon: "mail" } }, iconNames), []);
+});
+
+test('icons/known skips a "sources" item that is present but has no "icon" of its own', async () => {
+  const iconNames = await _internal.loadIconNames();
+  assert.deepEqual(_internal.checkIconsKnown({ sources: [{ label: "a" }] }, iconNames), []);
+});
+
+test('icons/known also collects a "hub" icon (not just source/sources/handled/by)', async () => {
+  const iconNames = await _internal.loadIconNames();
+  const findings = fails(_internal.checkIconsKnown({ hub: { label: "Hub", icon: "nope" } }, iconNames));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /^hub\.icon "nope"/);
+});
+
+test("loadIconNames rejects, naming scripts/icons.mjs, when the module at the given URL cannot be imported at all", async () => {
+  const missing = new URL("./does-not-exist-at-all.mjs", import.meta.url);
+  await assert.rejects(() => _internal.loadIconNames(missing), /Could not load scripts\/icons\.mjs/);
+});
+
+test('loadIconNames rejects when the module it imports exports an "ICONS" that is not an object', async () => {
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-badicons-"));
+  try {
+    const modPath = join(dir, "bad-icons.mjs");
+    writeFileSync(modPath, "export const ICONS = 42;\n");
+    await assert.rejects(() => _internal.loadIconNames(pathToFileURL(modPath)), /does not export an ICONS object/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('check() reports an "icons/known" fail (rather than throwing) when iconsUrl points at a module that fails to import', async () => {
+  const missing = new URL("./does-not-exist-at-all.mjs", import.meta.url);
+  const findings = await check(tidyInboxSpec, tidyInboxSvg, { iconsUrl: missing });
+  const iconFindings = findings.filter((f) => f.id === "icons/known");
+  assert.equal(iconFindings.length, 1);
+  assert.equal(iconFindings[0].level, "fail");
+  assert.match(iconFindings[0].message, /Could not load scripts\/icons\.mjs/);
+});
+
+test('check() reports a "text/fits" fail (rather than throwing) when widthsUrl points at a file that cannot be read', async () => {
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-badwidths-"));
+  try {
+    const missingPath = join(dir, "does-not-exist.json");
+    const findings = await check(tidyInboxSpec, tidyInboxSvg, { widthsUrl: pathToFileURL(missingPath) });
+    const widthFindings = findings.filter((f) => f.id === "text/fits");
+    assert.equal(widthFindings.length, 1);
+    assert.equal(widthFindings[0].level, "fail");
+    assert.match(widthFindings[0].message, /Could not read scripts\/widths\.json/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // icons/distinct
 // ---------------------------------------------------------------------------
@@ -298,9 +539,38 @@ test("icons/distinct fails when two handled items share an icon", () => {
   assert.match(findings[0].message, /"mail"/);
 });
 
+test('icons/distinct passes a spec with no "handled" key at all', () => {
+  assert.deepEqual(_internal.checkIconsDistinct({ title: "t" }), []);
+});
+
+test('icons/distinct skips a handled item that has no "icon" of its own, rather than crashing', () => {
+  const spec = { handled: [{ label: "A" }, { label: "B", icon: "car" }] };
+  assert.deepEqual(_internal.checkIconsDistinct(spec), []);
+});
+
+test('icons/distinct names a shared icon\'s owner by its positional index (e.g. "handled[1]") when that item has no "label" of its own', () => {
+  const spec = {
+    handled: [
+      { label: "A", icon: "mail" },
+      { icon: "mail" },
+    ],
+  };
+  const findings = fails(_internal.checkIconsDistinct(spec));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /handled\[1\]/);
+});
+
 // ---------------------------------------------------------------------------
 // text/fits
 // ---------------------------------------------------------------------------
+
+test("measureLabel substitutes the face's average advance for a character that face's table does not measure (an em dash)", () => {
+  const widths = _internal.loadWidths();
+  const faces = widths.faces;
+  const withDash = _internal.measureLabel(faces, "sans-600-17", "a—b");
+  const withoutDash = _internal.measureLabel(faces, "sans-600-17", "ab");
+  assert.ok(withDash > withoutDash, "an unmeasured character should still add some width (the face's average), not zero");
+});
 
 test("text/fits passes for tidy-inbox's short flat-style card labels", () => {
   const widths = _internal.loadWidths();
@@ -400,6 +670,14 @@ test('text/fits fails a window inbox row label of twenty characters, too long fo
   assert.match(findings[0].message, /does not fit the 60px room/);
 });
 
+test('text/fits warns, rather than failing, when scripts/widths.json has no measured face for the room being checked', () => {
+  const spec = { kind: "fan", style: "chart", headline: "A short headline" };
+  const findings = _internal.checkTextFits(spec, { faces: {} });
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].level, "warn");
+  assert.match(findings[0].message, /No measured face "serif-700-27" for the chart headline/);
+});
+
 test("text/fits fails when a before-after label is too long for its 180px room", () => {
   const widths = _internal.loadWidths();
   const spec = {
@@ -409,6 +687,12 @@ test("text/fits fails when a before-after label is too long for its 180px room",
   const findings = fails(_internal.checkTextFits(spec, widths));
   assert.equal(findings.length, 1);
   assert.match(findings[0].message, /does not fit the 180px room/);
+});
+
+test('text/fits passes a before-after spec with no "before" key at all, rather than crashing', () => {
+  const widths = _internal.loadWidths();
+  const spec = { kind: "before-after", after: { parts: [{ label: "A short label", at: "top" }] } };
+  assert.deepEqual(fails(_internal.checkTextFits(spec, widths)), []);
 });
 
 // ---------------------------------------------------------------------------
@@ -457,6 +741,26 @@ test("register/reader-nouns is skipped without --repo", () => {
   assert.deepEqual(_internal.checkReaderNouns(tidyInboxSpec, undefined), []);
 });
 
+test("register/reader-nouns treats a repo directory that cannot be read (does not exist) as having no nouns at all, rather than throwing", () => {
+  const missingDir = join(tmpdir(), "figurehead-nouns-does-not-exist-" + Date.now());
+  const spec = { handled: [{ label: "Ship it" }, { label: "Go fast" }] };
+  assert.deepEqual(_internal.checkReaderNouns(spec, missingDir), []);
+});
+
+test("register/reader-nouns skips a code-extension file it cannot read (permission denied), rather than throwing", { skip: process.getuid && process.getuid() === 0 && "root can read a file with no permission bits, so this fixture cannot fail the read" }, () => {
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-nouns-noperm-"));
+  try {
+    const unreadable = join(dir, "unreadable.mjs");
+    writeFileSync(unreadable, "export function doThing() {}\n");
+    chmodSync(unreadable, 0o000);
+    const spec = { handled: [{ label: "Ship it" }, { label: "Go fast" }] };
+    assert.deepEqual(_internal.checkReaderNouns(spec, dir), []);
+  } finally {
+    chmodSync(join(dir, "unreadable.mjs"), 0o644);
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("register/reader-nouns passes when no label matches a repo name", () => {
   const dir = mkdtempSync(join(tmpdir(), "figurehead-nouns-pass-"));
   try {
@@ -464,6 +768,18 @@ test("register/reader-nouns passes when no label matches a repo name", () => {
     writeFileSync(join(dir, "utils.mjs"), "export function doThing() {}\n");
     const spec = { handled: [{ label: "Ship it" }, { label: "Go fast" }] };
     assert.deepEqual(_internal.checkReaderNouns(spec, dir), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("register/reader-nouns checks a repeated label only once (its second occurrence is deduplicated, not double-reported)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-nouns-dedup-"));
+  try {
+    mkdirSync(join(dir, "widgets"));
+    const spec = { handled: [{ label: "widgets" }, { label: "widgets" }] };
+    const findings = fails(_internal.checkReaderNouns(spec, dir));
+    assert.equal(findings.length, 1, "a label repeated twice must be reported once, not twice");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -557,6 +873,11 @@ test("curves/no-hook ignores a hooked curve that isn't a fan link", () => {
   assert.deepEqual(_internal.checkCurvesNoHook(svg), []);
 });
 
+test("curves/no-hook ignores a <path> with no \"d\" attribute at all, rather than crashing", () => {
+  const svg = '<svg><path class="flow"/></svg>';
+  assert.deepEqual(_internal.checkCurvesNoHook(svg), []);
+});
+
 // ---------------------------------------------------------------------------
 // geometry/inside
 // ---------------------------------------------------------------------------
@@ -595,6 +916,59 @@ test("geometry/inside reads an element's own font-weight over the class rule, an
   assert.match(findings[0].message, /leaves the viewBox/);
 });
 
+test('geometry/inside measures a text-anchor="end" element from its right edge (the box extends left from x, not right)', () => {
+  const svg = [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" role="img" aria-labelledby="t1">',
+    '<title id="t1">x</title>',
+    "<style>.title { font-family: system-ui; font-weight: 600; }</style>",
+    '<text class="title" x="10" y="50" font-size="17" text-anchor="end">A right-aligned label far too wide for this room</text>',
+    "</svg>",
+  ].join("\n");
+  const findings = fails(_internal.checkGeometryInside(svg, _internal.loadWidths()));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /leaves the viewBox/);
+});
+
+test("geometry/inside passes with no findings, rather than crashing, when the <svg> has no viewBox attribute at all", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t1"><title id="t1">x</title><rect x="9999" y="9999" width="1" height="1"/></svg>';
+  assert.deepEqual(_internal.checkGeometryInside(svg, _internal.loadWidths()), []);
+});
+
+test("geometry/inside reads a single-argument translate() (no y) as dy=0", () => {
+  const svg = [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="t1">',
+    '<title id="t1">x</title>',
+    '<g transform="translate(90)"><rect x="20" y="0" width="20" height="20"/></g>',
+    "</svg>",
+  ].join("\n");
+  // The <rect> sits at x=20 within the <g>; translate(90) (no y given) shifts it to x=110,
+  // outside the 100-wide viewBox, but must not shift it vertically (dy=0) or crash.
+  const findings = fails(_internal.checkGeometryInside(svg, _internal.loadWidths()));
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /leaves the viewBox/);
+});
+
+test("geometry/inside skips a <text> element with no class attribute at all (no measured face can be resolved for it), rather than crashing", () => {
+  const svg = [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1">',
+    '<title id="t1">x</title>',
+    "<style>.title { font-family: system-ui; font-weight: 600; }</style>",
+    '<text x="9999" y="9999" font-size="17">Off canvas, but unclassed, so skipped</text>',
+    "</svg>",
+  ].join("\n");
+  assert.deepEqual(_internal.checkGeometryInside(svg, _internal.loadWidths()), []);
+});
+
+test("geometry/inside reads a bare <rect/> with no x/y/width/height attributes as all zero, rather than crashing", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">x</title><rect/></svg>';
+  assert.deepEqual(_internal.checkGeometryInside(svg, _internal.loadWidths()), []);
+});
+
+test("geometry/inside reads a bare <circle/> with no cx/cy/r attributes as all zero, rather than crashing", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">x</title><circle/></svg>';
+  assert.deepEqual(_internal.checkGeometryInside(svg, _internal.loadWidths()), []);
+});
+
 // ---------------------------------------------------------------------------
 // xml/valid
 // ---------------------------------------------------------------------------
@@ -619,6 +993,83 @@ test("xml/valid fails on an unbalanced tag", () => {
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">x</title><g><rect x="0" y="0" width="1" height="1"/></svg>';
   const findings = fails(_internal.checkXmlValid(svg));
   assert.ok(findings.some((f) => /not well formed/.test(f.message)));
+});
+
+const baseSvg = (inner) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">x</title>${inner}</svg>`;
+
+test("xml/valid passes an SVG containing a well-formed XML comment (a closed <!-- ... -->)", () => {
+  assert.deepEqual(_internal.checkXmlValid(baseSvg('<!-- a comment --><rect x="0" y="0" width="1" height="1"/>')), []);
+});
+
+test("xml/valid fails on an unterminated XML comment (no closing -->)", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">x</title><!-- never closed';
+  const findings = fails(_internal.checkXmlValid(svg));
+  assert.ok(findings.some((f) => /not well formed/.test(f.message)));
+});
+
+test("xml/valid passes an SVG containing a well-formed CDATA section (a closed <![CDATA[ ... ]]>)", () => {
+  assert.deepEqual(_internal.checkXmlValid(baseSvg("<![CDATA[some data]]><rect x=\"0\" y=\"0\" width=\"1\" height=\"1\"/>")), []);
+});
+
+test("xml/valid fails on an unterminated CDATA section (no closing ]]>)", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">x</title><![CDATA[ never closed';
+  const findings = fails(_internal.checkXmlValid(svg));
+  assert.ok(findings.some((f) => /not well formed/.test(f.message)));
+});
+
+test("xml/valid passes an SVG containing a well-formed processing instruction (a closed <? ... ?>)", () => {
+  assert.deepEqual(_internal.checkXmlValid(baseSvg('<?embedded instruction?><rect x="0" y="0" width="1" height="1"/>')), []);
+});
+
+test("xml/valid fails on an unterminated processing instruction (no closing ?>)", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">x</title><?never closed';
+  const findings = fails(_internal.checkXmlValid(svg));
+  assert.ok(findings.some((f) => /not well formed/.test(f.message)));
+});
+
+test("xml/valid passes an SVG containing a well-formed declaration such as <!DOCTYPE ...> (closed by its own >)", () => {
+  assert.deepEqual(_internal.checkXmlValid(baseSvg('<!DOCTYPE anything><rect x="0" y="0" width="1" height="1"/>')), []);
+});
+
+test("xml/valid fails on an unterminated declaration such as <!DOCTYPE (no closing >)", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">x</title><!DOCTYPE never closed';
+  const findings = fails(_internal.checkXmlValid(svg));
+  assert.ok(findings.some((f) => /not well formed/.test(f.message)));
+});
+
+test("xml/valid fails on a malformed tag that is neither a valid close tag nor a valid open tag", () => {
+  const svg = baseSvg("<1not-a-valid-tag-name>");
+  const findings = fails(_internal.checkXmlValid(svg));
+  assert.ok(findings.some((f) => /not well formed/.test(f.message)));
+});
+
+test("xml/valid fails on an unterminated <style> block (no closing </style>)", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">x</title><style>.a { fill: red; }';
+  const findings = fails(_internal.checkXmlValid(svg));
+  assert.ok(findings.some((f) => /not well formed/.test(f.message)));
+});
+
+test("xml/valid fails, naming the missing root, when there is no <svg> element at all", () => {
+  const findings = fails(_internal.checkXmlValid('<title id="t1">x</title>'));
+  assert.ok(findings.some((f) => /No <svg> root element was found/.test(f.message)));
+});
+
+test('xml/valid fails when aria-labelledby is missing even though role="img" is present', () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img"><title id="t1">x</title></svg>';
+  const findings = fails(_internal.checkXmlValid(svg));
+  assert.ok(findings.some((f) => /missing aria-labelledby/.test(f.message)));
+});
+
+test("xml/valid fails, naming the missing child, when the <svg> has no <title> at all", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><rect x="0" y="0" width="1" height="1"/></svg>';
+  const findings = fails(_internal.checkXmlValid(svg));
+  assert.ok(findings.some((f) => /The <svg> has no <title> child/.test(f.message)));
+});
+
+test("xml/valid fails when the <title> child has no id attribute of its own", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title>x</title></svg>';
+  const findings = fails(_internal.checkXmlValid(svg));
+  assert.ok(findings.some((f) => /title.*child has no id/.test(f.message)));
 });
 
 // ---------------------------------------------------------------------------
@@ -649,7 +1100,7 @@ test("CLI exits 0 for a passing pair even though it prints a warn (a warn never 
   // spec minus its "style", paired with its own real SVG, which before-after
   // rendering produces identically whether or not "style" is set) rather than a
   // committed example.
-  const res = spawnSync("node", ["scripts/check.mjs", noStyleSpecPath, noStyleSvgPath], { cwd: root, encoding: "utf8" });
+  const res = spawnSync("node", ["scripts/check.mjs", noStyleSpecPath, noStyleSvgPath], { cwd: root, encoding: "utf8", env: NO_COVERAGE_ENV });
   assert.equal(res.status, 0);
   const lines = res.stdout.trim().split("\n").filter(Boolean);
   assert.equal(lines.length, 1);
@@ -659,7 +1110,7 @@ test("CLI exits 0 for a passing pair even though it prints a warn (a warn never 
 test("CLI exits 1 and prints tab-separated findings for a failing pair", () => {
   // The same inline-built bad spec, checked against readmerlin's real SVG so
   // only spec/shape (not spec/agrees) is expected to fail.
-  const res = spawnSync("node", ["scripts/check.mjs", badSpecPath, resolve(root, "examples/readmerlin/readmerlin.svg")], { cwd: root, encoding: "utf8" });
+  const res = spawnSync("node", ["scripts/check.mjs", badSpecPath, resolve(root, "examples/readmerlin/readmerlin.svg")], { cwd: root, encoding: "utf8", env: NO_COVERAGE_ENV });
   assert.equal(res.status, 1);
   const lines = res.stdout.trim().split("\n");
   assert.ok(lines.length >= 1);
@@ -687,7 +1138,7 @@ test("CLI's --repo flag runs register/reader-nouns", () => {
       })
     );
     writeFileSync(svgPath, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" role="img" aria-labelledby="t1"><title id="t1">t</title><text>rides</text><text>meals</text><text>flights</text><text>a</text></svg>');
-    const res = spawnSync("node", [resolve(root, "scripts/check.mjs"), specPath, svgPath, "--repo", dir], { cwd: root, encoding: "utf8" });
+    const res = spawnSync("node", [resolve(root, "scripts/check.mjs"), specPath, svgPath, "--repo", dir], { cwd: root, encoding: "utf8", env: NO_COVERAGE_ENV });
     assert.equal(res.status, 1);
     assert.match(res.stdout, /register\/reader-nouns\tfail\t.*"rides"/);
   } finally {

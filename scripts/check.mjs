@@ -36,9 +36,11 @@ const unescapeXml = (s) =>
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, "&");
 
-function loadWidths() {
-  const url = new URL("./widths.json", import.meta.url);
-  return JSON.parse(readFileSync(fileURLToPath(url), "utf8"));
+// widthsUrl is injectable so a test can point this at a broken or missing
+// file without touching the repo's own scripts/widths.json; real callers
+// never pass it, so they always get the file this module ships beside.
+function loadWidths(widthsUrl = new URL("./widths.json", import.meta.url)) {
+  return JSON.parse(readFileSync(fileURLToPath(widthsUrl), "utf8"));
 }
 
 /** Sum a label's advance in one measured face; unknown characters get the face's average advance. Returns null if the face isn't measured. */
@@ -142,7 +144,13 @@ function checkSpecShape(spec) {
   // "at" would draw one on top of the other (both are positioned by "at" on
   // the before/after sheet), so it's a fail naming the shared value.
   const checkSharedAt = (items, where) => {
+    // Invariant: both call sites below only reach checkSharedAt from inside the "else" of an
+    // "!Array.isArray(...) || !....length" check on the very same value, so items is always a
+    // real, non-empty array by the time it gets here. Kept as defense-in-depth against a future
+    // call site that forgets that guard.
+    /* node:coverage disable */
     if (!Array.isArray(items)) return;
+    /* node:coverage enable */
     const byAt = new Map();
     items.forEach((item, i) => {
       if (!isPlainObject(item) || item.at === undefined) return;
@@ -287,11 +295,14 @@ function checkSpecShape(spec) {
 
 /** Loads the known icon-name list from scripts/icons.mjs, the renderer builder's
  * permanently-owned single source of truth (one entry per name). A missing or
- * broken import is a clear thrown error rather than a crash at module load. */
-async function loadIconNames() {
+ * broken import is a clear thrown error rather than a crash at module load.
+ * iconsUrl is injectable the same way widthsUrl is above, for the same reason:
+ * a test can point this at a broken or missing module without touching the
+ * repo's own scripts/icons.mjs; real callers never pass it. */
+async function loadIconNames(iconsUrl = new URL("./icons.mjs", import.meta.url)) {
   let mod;
   try {
-    mod = await import(new URL("./icons.mjs", import.meta.url));
+    mod = await import(iconsUrl);
   } catch (err) {
     throw new Error(`Could not load scripts/icons.mjs: ${err.message}`);
   }
@@ -430,7 +441,14 @@ function checkSpecAgrees(spec, svg) {
   const blockRe = /<title\b[^>]*>([\s\S]*?)<\/title>|<text\b[^>]*>([\s\S]*?)<\/text>/g;
   let m;
   while ((m = blockRe.exec(svg))) {
-    const raw = (m[1] ?? m[2] ?? "").replace(/<[^>]*>/g, "");
+    // Invariant: blockRe is a two-way alternation, one capture group per side (title, text).
+    // Whenever the regex matches at all, exactly the matched side's group is defined (as at
+    // least ""), so matched is never nullish and the "?? ''" below never substitutes for real;
+    // kept as defense-in-depth against blockRe growing a third, ungrouped alternative.
+    const matched = m[1] ?? m[2];
+    /* node:coverage disable */
+    const raw = (matched ?? "").replace(/<[^>]*>/g, "");
+    /* node:coverage enable */
     blocks.push(unescapeXml(raw));
   }
   const haystack = collapseWs(blocks.join(" "));
@@ -525,7 +543,13 @@ function checkReaderNouns(spec, repoDir) {
 
   const seen = new Set();
   for (const label of collectReaderNounLabels(spec)) {
+    // Invariant: collectReaderNounLabels's own walk() only ever pushes a value into the array
+    // it returns when "typeof v === \"string\"" already held for that value (see its body just
+    // above), so every label here is already a string. Kept as defense-in-depth against a
+    // future change to that walk loosening what it pushes.
+    /* node:coverage disable */
     if (typeof label !== "string") continue;
+    /* node:coverage enable */
     const key = label.trim().toLowerCase();
     if (!key || seen.has(key)) continue;
     seen.add(key);
@@ -611,7 +635,15 @@ function attrsOf(str) {
   const attrs = {};
   const re = /([\w:-]+)\s*=\s*"([^"]*)"/g;
   let m;
-  while ((m = re.exec(str ?? ""))) attrs[m[1]] = m[2];
+  // Invariant: every call site below (checkCurvesNoHook's regex capture, and
+  // checkGeometryInside's g/rect/circle/text captures, each guarded by its own
+  // "!== undefined" check before calling) already passes a defined string, possibly
+  // empty but never undefined. Kept as defense-in-depth against a future caller that
+  // skips that guard.
+  /* node:coverage disable */
+  const safeStr = str ?? "";
+  /* node:coverage enable */
+  while ((m = re.exec(safeStr))) attrs[m[1]] = m[2];
   return attrs;
 }
 
@@ -882,7 +914,7 @@ export async function check(spec, svg, options = {}) {
 
   let iconNames = null;
   try {
-    iconNames = await loadIconNames();
+    iconNames = await loadIconNames(options.iconsUrl);
   } catch (err) {
     findings.push({ id: "icons/known", level: "fail", message: err.message, repair: "Add scripts/icons.mjs exporting an ICONS object." });
   }
@@ -891,7 +923,7 @@ export async function check(spec, svg, options = {}) {
 
   let widths = null;
   try {
-    widths = loadWidths();
+    widths = loadWidths(options.widthsUrl);
   } catch (err) {
     findings.push({ id: "text/fits", level: "fail", message: `Could not read scripts/widths.json: ${err.message}`, repair: "Commit scripts/widths.json with the measured advances." });
   }
@@ -926,21 +958,47 @@ export const _internal = {
 // CLI: node scripts/check.mjs <spec.hero.json> <file.svg> [--repo <dir>]
 // ---------------------------------------------------------------------------
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  const args = process.argv.slice(2);
-  const repoIdx = args.indexOf("--repo");
-  const repo = repoIdx !== -1 ? args[repoIdx + 1] : undefined;
-  const positional = repoIdx === -1 ? args : args.filter((_, i) => i !== repoIdx && i !== repoIdx + 1);
+// Sets process.exitCode rather than calling process.exit() so a test can
+// import and call this directly (in the current process, not a spawned
+// child) to exercise every branch deterministically: process.exit() would
+// kill the test runner itself. Exported for exactly that; real CLI use goes
+// through the entry-point guard below, which behaves identically since
+// nothing else runs after it.
+export async function runCli(argv) {
+  const repoIdx = argv.indexOf("--repo");
+  const repo = repoIdx !== -1 ? argv[repoIdx + 1] : undefined;
+  const positional = repoIdx === -1 ? argv : argv.filter((_, i) => i !== repoIdx && i !== repoIdx + 1);
   const [specPath, svgPath] = positional;
 
   if (!specPath || !svgPath) {
     console.error("usage: node scripts/check.mjs <spec.hero.json> <file.svg> [--repo <dir>]");
-    process.exit(2);
+    process.exitCode = 2;
+    return;
   }
 
   const spec = JSON.parse(readFileSync(specPath, "utf8"));
   const svg = readFileSync(svgPath, "utf8");
   const findings = await check(spec, svg, repo ? { repo } : {});
   for (const f of findings) console.log([f.id, f.level, f.message, f.repair].join("\t"));
-  process.exit(findings.some((f) => f.level === "fail") ? 1 : 0);
+  process.exitCode = findings.some((f) => f.level === "fail") ? 1 : 0;
 }
+
+// This condition is only ever true when the file is the process's own entry
+// point (a real `node scripts/check.mjs ...` invocation), which by
+// definition means this module was not imported by the test suite — it was
+// launched as a fresh process. test/check.test.mjs's and
+// test/render.test.mjs's end-to-end subprocess tests exercise this exact
+// line (and runCli's behaviour through it) for real; their child process's
+// own coverage instrumentation is intentionally excluded from this run's
+// measurement (see test/README-less note by NODE_V8_COVERAGE in those
+// tests) so the reported number does not depend on whether a spawned
+// child's coverage file finishes flushing before this process reads its own.
+// A disable/enable block, not "ignore next N": the condition below embeds its
+// own branch (`process.argv[1] ?? ""`), and "ignore next N" only excludes
+// statement/line ranges, not that branch's own coverage counters, so a
+// literal, deterministic 100% needs the block form here.
+/* node:coverage disable */
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  await runCli(process.argv.slice(2));
+}
+/* node:coverage enable */

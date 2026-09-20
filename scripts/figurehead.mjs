@@ -698,7 +698,28 @@ function positionalArgs(args) {
   return out;
 }
 
-async function runCli(argv) {
+// The default way the "check" subcommand reaches scripts/check.mjs, and the
+// default examples/ directory the "goldens" subcommand rebuilds. Both are
+// swappable through runCli's second argument: a test can point "check" at an
+// import that always rejects (to exercise the "not installed yet" branch
+// below without deleting the real scripts/check.mjs) and can point
+// "goldens" at a temp directory built for the test (to exercise its
+// not-a-directory, missing-spec and non-ENOENT-error branches without ever
+// writing to the repo's own examples/). Real CLI use never passes either
+// override, so it always gets these two.
+function importCheckModule() {
+  return import(new URL("./check.mjs", import.meta.url));
+}
+
+function defaultExamplesDir() {
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "examples");
+}
+
+// Exported so a test can call this directly (in the current process, not a
+// spawned child) and exercise every branch deterministically; see the
+// module-load guard at the bottom of this file for why it is not called
+// with a top-level await.
+export async function runCli(argv, { importCheck = importCheckModule, examplesDir = defaultExamplesDir() } = {}) {
   const [cmd, ...rest] = argv;
 
   if (cmd === "render") {
@@ -726,7 +747,7 @@ async function runCli(argv) {
     }
     let check;
     try {
-      ({ check } = await import(new URL("./check.mjs", import.meta.url)));
+      ({ check } = await importCheck());
     } catch {
       console.error("the checks are not installed yet (scripts/check.mjs does not exist)");
       process.exitCode = 2;
@@ -745,8 +766,6 @@ async function runCli(argv) {
   }
 
   if (cmd === "goldens") {
-    const here = dirname(fileURLToPath(import.meta.url));
-    const examplesDir = resolve(here, "..", "examples");
     for (const name of readdirSync(examplesDir)) {
       const dir = join(examplesDir, name);
       if (!statSync(dir).isDirectory()) continue;
@@ -766,6 +785,15 @@ async function runCli(argv) {
   process.exitCode = 2;
 }
 
+// Extracted so a test can call it directly with both an Error (the real
+// shape a rejection from runCli carries) and a non-Error value (the `??`
+// fallback's own reason for existing) without needing runCli itself to
+// reject. Exported for exactly that.
+export function reportFatal(err) {
+  console.error(err?.stack ?? String(err));
+  process.exitCode = 1;
+}
+
 // Not a top-level `await runCli(...)`: that would make this module's own evaluation
 // asynchronous, and the "check" subcommand dynamically imports scripts/check.mjs, which
 // statically imports this file back (for `labels`). A top-level await here turns that
@@ -773,9 +801,20 @@ async function runCli(argv) {
 // "Detected unsettled top-level await" (exit code 13) instead of ever reaching runCli's
 // own exit code. Running the promise without awaiting it at the top level keeps this
 // module's evaluation synchronous, so the cycle resolves normally.
+//
+// This condition is only ever true when the file is the process's own entry point (a real
+// `node scripts/figurehead.mjs ...` invocation), which by definition means it was launched
+// as a fresh process rather than imported by the test suite. test/render.test.mjs's
+// end-to-end subprocess test exercises this exact line for real; that child process's own
+// coverage instrumentation is intentionally excluded from this run's measurement so the
+// reported number does not depend on whether a spawned child's coverage file finishes
+// flushing before this process reads its own.
+//
+// A disable/enable block, not "ignore next N": the condition below embeds its own branch
+// (`process.argv[1] ?? ""`), and "ignore next N" only excludes statement/line ranges, not that
+// branch's own coverage counters, so a literal, deterministic 100% needs the block form here.
+/* node:coverage disable */
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  runCli(process.argv.slice(2)).catch((err) => {
-    console.error(err?.stack ?? String(err));
-    process.exitCode = 1;
-  });
+  runCli(process.argv.slice(2)).catch(reportFatal);
 }
+/* node:coverage enable */

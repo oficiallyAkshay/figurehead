@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=scripts/** --test-coverage-lines=94 --test-coverage-branches=88 --test-coverage-functions=98 test/*.test.mjs"
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=scripts/** --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 test/*.test.mjs"
   },
   "repository": {
     "type": "git",
