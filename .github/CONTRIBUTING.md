@@ -20,17 +20,18 @@ node scripts/figurehead.mjs render <name>.hero.json --out <name>.svg
 node scripts/figurehead.mjs check <name>.hero.json <name>.svg --repo <repo root>
 node scripts/figurehead.mjs goldens
 npm test
+npm run test:coverage
 pipx run pre-commit run --all-files --show-diff-on-failure
 ```
 
-Node 20 or newer. Nothing to install.
+Node 20 or newer. Nothing to install. `npm run test:coverage` needs Node 22 or newer; Node 20's `--test-coverage-lines`/`--test-coverage-branches`/`--test-coverage-functions` flags do not exist yet, even on its latest patch.
 
 ## What CI runs
 
 | Job | What it proves |
 | --- | --- |
-| `checks` | the same hooks a contributor runs locally (gitleaks, actionlint), a secrets scan over the whole history, every script parses |
-| `test` on Node 20 and 22 | the suite, which rebuilds every example in `examples/` from its spec and fails on a byte of drift |
+| `checks` | the same hooks a contributor runs locally (gitleaks, actionlint, zizmor), every `uses:` pin verified against the commit its version comment names (pinact), a secrets scan over the whole history, every script parses |
+| `test` on Node 20 and 22 | the suite, which rebuilds every example in `examples/` from its spec and fails on a byte of drift; the Node 22 leg also gates on coverage of `scripts/**` staying at or above the measured floor (94% lines, 88% branches, 98% functions) |
 | `ci` | the one context the branch ruleset requires; green only when both jobs are |
 
 `clonometer` runs daily and keeps a lifetime clone count on the `badges` branch. Nothing here phones home from a user's machine. Its `TRAFFIC_TOKEN` secret is a fine-grained token scoped to this one repository, with Contents write and Administration read.
