@@ -4,7 +4,7 @@
 # with no commit; any commit on any branch resets that clock.
 name: clonometer
 on:
-  schedule: [{cron: "23 3 * * *"}]
+  schedule: [{cron: "17 8 * * *"}]
   workflow_dispatch:
 permissions: {}
 concurrency: {group: clonometer}
