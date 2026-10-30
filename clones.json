@@ -1,0 +1,18 @@
+{
+  "badge": "46 (7d) \u2022 865 (all-time)",
+  "last7": 46,
+  "last7_short": "46",
+  "metric": "clones",
+  "repo": "oficiallyAkshay/figurehead",
+  "schema": 1,
+  "since": "2026-09-06",
+  "total": 865,
+  "total_short": "865",
+  "updated": "2026-10-30",
+  "window": {
+    "count": 159,
+    "days": 14,
+    "uniques": 65
+  },
+  "window_short": "159"
+}
