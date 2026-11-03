@@ -10,4 +10,4 @@ The CLI is exact: `render`, `check`, `goldens`. Findings print as `id<TAB>level<
 
 A style is chosen for every hero; `flat` exists only so readmerlin's and tidy-inbox's goldens do not move. A new world is proposed in one sentence and accepted before drawing.
 
-Branch per change, plain-sentence titles, a claim table in the PR body, no auto-merge.
+Branch per change, plain-sentence titles, a claim table in the PR body. Dependabot pull requests and agent pull requests may auto-merge once the required `ci` check passes; see [Dependabot auto-merge](.github/CONTRIBUTING.md#what-ci-runs) in CONTRIBUTING.
