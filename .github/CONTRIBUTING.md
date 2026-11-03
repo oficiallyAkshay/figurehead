@@ -36,6 +36,8 @@ Node 20 or newer. Nothing to install. `npm run test:coverage` needs Node 22 or n
 
 `clonometer` runs daily and keeps a lifetime clone count on the `badges` branch. Nothing here phones home from a user's machine. Its `TRAFFIC_TOKEN` secret is a fine-grained token scoped to this one repository, with Contents write and Administration read.
 
+Dependabot pull requests and agent pull requests may auto-merge once the required `ci` check passes.
+
 `dependabot-auto-merge` runs on every pull request and arms `gh pr merge --auto --rebase` for the ones Dependabot opened; it never runs for anyone else's pull request, and arming auto-merge does not itself pass anything, since `ci` above still has to go green, coverage gate included, before GitHub merges it. It exists because a scheduled workflow on a public repository (`clonometer` here) is disabled after 60 days without a commit, and a Dependabot bump landing on its own keeps that clock from running out unattended.
 
 ## A change must satisfy
