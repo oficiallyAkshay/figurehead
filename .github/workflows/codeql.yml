@@ -10,7 +10,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Weekly, off the clonometer workflow's daily schedule (23 3 * * *)
+    # Weekly, off the clonometer workflow's hourly schedule (minute 17)
     # and the readme-check workflow's Monday run (0 9 * * 1), so none of
     # them compete for the same runner minute.
     - cron: "24 4 * * 1"
