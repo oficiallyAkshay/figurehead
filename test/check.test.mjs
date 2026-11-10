@@ -512,7 +512,7 @@ test('check() reports a "text/fits" fail (rather than throwing) when widthsUrl p
     const widthFindings = findings.filter((f) => f.id === "text/fits");
     assert.equal(widthFindings.length, 1);
     assert.equal(widthFindings[0].level, "fail");
-    assert.match(widthFindings[0].message, /Could not read scripts\/widths\.json/);
+    assert.match(widthFindings[0].message, /Could not read scripts\/widths\.mjs/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
