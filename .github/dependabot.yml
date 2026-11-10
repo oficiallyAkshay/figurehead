@@ -1,7 +1,9 @@
 # Actions are pinned to a commit sha, which no scanner can bump on its own,
 # so a version bump arrives here as a pull request that CI has to pass like
-# any other change. figurehead ships zero runtime dependencies and no
-# lockfile, so github-actions is the only ecosystem there is to update.
+# any other change. The pre-commit scanner hooks are pinned by tag in
+# .pre-commit-config.yaml and are bumped the same way. figurehead ships zero
+# runtime dependencies and no lockfile, so github-actions and pre-commit are
+# the two ecosystems there are to update.
 version: 2
 
 updates:
@@ -16,3 +18,10 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # The same week of cooldown as the action pins.
+    cooldown:
+      default-days: 7
