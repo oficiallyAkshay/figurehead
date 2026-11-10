@@ -3,9 +3,9 @@
 // references/contract.md, "The checks", for the id/level/message/repair
 // contract and what each of the nine ids fails on.
 //
-// Measurement method for scripts/widths.json (restated here per the
+// Measurement method for scripts/widths.mjs (restated here per the
 // contract, which asks for it "at the top of scripts/check.mjs"; the
-// authoritative copy lives in widths.json's own "method" field):
+// authoritative copy lives in widths.mjs's own "method" field):
 //   canvas measureText per printable ASCII character, Chromium on macOS,
 //   2026-09-19; advances in px at the named size; sum a label, add ten
 //   percent, and compare with the room its card gives it.
@@ -14,7 +14,9 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
-import { labels } from "./figurehead.mjs";
+import { labels } from "./components/labels.mjs";
+import { ICONS as defaultIcons } from "./icons.mjs";
+import defaultWidths from "./widths.mjs";
 
 // ---------------------------------------------------------------------------
 // Small shared helpers
@@ -53,10 +55,11 @@ function stripTags(s) {
 }
 
 // widthsUrl is injectable so a test can point this at a broken or missing
-// file without touching the repo's own scripts/widths.json; real callers
-// never pass it, so they always get the file this module ships beside.
-function loadWidths(widthsUrl = new URL("./widths.json", import.meta.url)) {
-  return JSON.parse(readFileSync(fileURLToPath(widthsUrl), "utf8"));
+// JSON file without touching the repo's own scripts/widths.mjs; real callers
+// never pass it, so they always get the statically imported default, which a
+// bundler inlines so the bundled check runs from one file.
+function loadWidths(widthsUrl) {
+  return widthsUrl ? JSON.parse(readFileSync(fileURLToPath(widthsUrl), "utf8")) : defaultWidths;
 }
 
 /** Sum a label's advance in one measured face; unknown characters get the face's average advance. Returns null if the face isn't measured. */
@@ -315,10 +318,10 @@ function checkSpecShape(spec) {
  * iconsUrl is injectable the same way widthsUrl is above, for the same reason:
  * a test can point this at a broken or missing module without touching the
  * repo's own scripts/icons.mjs; real callers never pass it. */
-async function loadIconNames(iconsUrl = new URL("./icons.mjs", import.meta.url)) {
-  let mod;
+async function loadIconNames(iconsUrl) {
+  let mod = { ICONS: defaultIcons };
   try {
-    mod = await import(iconsUrl);
+    if (iconsUrl) mod = await import(iconsUrl);
   } catch (err) {
     throw new Error(`Could not load scripts/icons.mjs: ${err.message}`);
   }
@@ -381,7 +384,7 @@ function checkTextFits(spec, widths) {
     if (text === undefined || text === null || text === "") return;
     const width = measureLabel(faces, faceKey, text);
     if (width === null) {
-      findings.push(F("warn", `No measured face "${faceKey}" for ${where}; text/fits was skipped for it.`, `Add "${faceKey}" to scripts/widths.json.`));
+      findings.push(F("warn", `No measured face "${faceKey}" for ${where}; text/fits was skipped for it.`, `Add "${faceKey}" to scripts/widths.mjs.`));
       return;
     }
     const withMargin = width * 1.1;
@@ -626,7 +629,7 @@ function checkCurvesNoHook(svg) {
 //     font-style="italic"); otherwise weight/style fall back to the <style>
 //     block's `.class { ... }` rules. Combined with the element's own
 //     font-size attribute and the family the class rules name, this must
-//     name a face measured in scripts/widths.json exactly (e.g. class="title"
+//     name a face measured in scripts/widths.mjs exactly (e.g. class="title"
 //     font-size="17" on the sans stack at weight 600 -> "sans-600-17"; class
 //     "serif ink" font-weight="700" font-size="27" -> "serif-700-27"). Its
 //     width then comes from the same advances text/fits uses; text-anchor
@@ -637,7 +640,7 @@ function checkCurvesNoHook(svg) {
 //   - rotate() or scale() on any transform — ignored, per the brief, not composed.
 //   - any <path> geometry (arrows, waves, rope, curves, ship, letters) — that
 //     needs a real path-bbox walk, which this file does not attempt.
-//   - a <text> element whose face doesn't match a widths.json key exactly
+//   - a <text> element whose face doesn't match a widths.mjs key exactly
 //     (inherited/unset font-size, an untabulated size, a class the <style>
 //     block doesn't define) is skipped, not failed.
 //   - elements inside <defs> are not specially excluded; in the current
@@ -692,7 +695,7 @@ function faceKeyFor(classAttr, fontSize, rules, ownAttrs = {}) {
   // which for the chart style only ever set font-family and fill: .serif {
   // font-family: Georgia... } carries no weight or style of its own. Reading
   // the class rules only, as before, made every such element resolve to a
-  // face key like "serif-400-27" that scripts/widths.json never measured, so
+  // face key like "serif-400-27" that scripts/widths.mjs never measured, so
   // it was silently skipped instead of checked.
   const italic = ownAttrs["font-style"] !== undefined ? ownAttrs["font-style"] === "italic" : /font-style\s*:\s*italic/.test(body);
   let weight;
@@ -941,7 +944,7 @@ export async function check(spec, svg, options = {}) {
   try {
     widths = loadWidths(options.widthsUrl);
   } catch (err) {
-    findings.push({ id: "text/fits", level: "fail", message: `Could not read scripts/widths.json: ${err.message}`, repair: "Commit scripts/widths.json with the measured advances." });
+    findings.push({ id: "text/fits", level: "fail", message: `Could not read scripts/widths.mjs: ${err.message}`, repair: "Commit scripts/widths.mjs with the measured advances." });
   }
   if (widths) findings.push(...checkTextFits(spec, widths));
 

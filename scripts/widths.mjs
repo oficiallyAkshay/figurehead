@@ -1,4 +1,4 @@
-{
+export default {
   "method": "canvas measureText per printable ASCII character, Chromium on macOS, 2026-09-19; advances in px at the named size; sum a label, add ten percent, compare with the room its card gives it",
   "faces": {
     "sans-600-17": {

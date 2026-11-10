@@ -20,7 +20,7 @@ An agent skill. Not a package. Installed with `npx skills add oficiallyAkshay/fi
 | `scripts/figurehead.mjs` | renderer builder | The CLI and the `render(spec)` export. Seeded from readmerlin's `hero-svg.mjs`; that history is kept |
 | `scripts/icons.mjs` | renderer builder | The icon subset, one entry per name |
 | `scripts/check.mjs` | checks builder | The `check(spec, svg, options)` export and the check rules |
-| `scripts/widths.json` | checks builder | Measured character advances for the faces and sizes the renderer uses |
+| `scripts/widths.mjs` | checks builder | Measured character advances for the faces and sizes the renderer uses |
 | `test/render.test.mjs` | renderer builder | Goldens rebuild byte for byte; unknown icon refused; determinism |
 | `test/check.test.mjs` | checks builder | Every rule has a passing and a failing fixture |
 | `examples/<name>/` | renderer builder | Goldens, see below |
@@ -101,7 +101,7 @@ Each has an id, a level (fail or warn), a message and a repair line, printed one
 | `geometry/inside` | any element's bounding box leaves the viewBox |
 | `xml/valid` | the SVG is not well formed, or lacks a title, `role="img"` and `aria-labelledby` |
 
-`text/fits` reads `scripts/widths.json`. That file holds, for each face the renderer uses (sans, serif, hand) and each size, the advance of every printable ASCII character, measured once in a browser and committed, with the measurement method written at the top of `scripts/check.mjs`.
+`text/fits` reads `scripts/widths.mjs`, a module whose default export is the data, so a bundler can put it into one file with the check. That file holds, for each face the renderer uses (sans, serif, hand) and each size, the advance of every printable ASCII character, measured once in a browser and committed, with the measurement method written at the top of `scripts/check.mjs`.
 
 ## Builders return
 
