@@ -1,0 +1,50 @@
+# The clonometer workflow writes the clone badge with the TRAFFIC_TOKEN secret.
+# If that token lapses, the badge keeps its last number and nobody sees it, and
+# GitHub keeps traffic figures for fourteen days only. This check uses the
+# workflow's own token, so it still runs when the traffic token has lapsed.
+# It fails and opens one issue for the owner when the newest commit on the
+# badges branch is older than the limit.
+#
+# Limit: clonometer v1.2.0 counts a scheduled tick only runs-per-day times a
+# day (default 2, so every 12 hours; the repository variable
+# CLONOMETER_RUNS_PER_DAY may set 1, so every 24 hours), and each count
+# replaces the one commit on badges. The longest normal gap is 24 hours; the
+# limit adds 6 hours. It stays far under the fourteen days GitHub keeps.
+name: badges-fresh
+on:
+  schedule: [{cron: "43 * * * *"}]
+  workflow_dispatch:
+permissions: {}
+concurrency: {group: badges-fresh}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      OWNER: ${{ github.repository_owner }}
+      TITLE: Clone badge has not updated
+      LIMIT_HOURS: "30"
+    steps:
+      - name: Check the newest commit on badges
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A read error or a missing branch fails the step here.
+          date_iso=$(gh api "repos/${GH_REPO}/commits/badges" --jq '.commit.committer.date')
+          age_hours=$(( ( $(date +%s) - $(date -d "${date_iso}" +%s) ) / 3600 ))
+          echo "Newest commit on badges: ${date_iso} (${age_hours} hours ago, limit ${LIMIT_HOURS})"
+          if [ "${age_hours}" -le "${LIMIT_HOURS}" ]; then
+            exit 0
+          fi
+          open=$(gh issue list --state open --limit 100 --json title --jq "[.[] | select(.title == env.TITLE)] | length")
+          if [ "${open}" -eq 0 ]; then
+            gh issue create --title "${TITLE}" --assignee "${OWNER}" \
+              --body "The newest commit on the badges branch is from ${date_iso}, ${age_hours} hours ago; the limit is ${LIMIT_HOURS} hours. The clonometer workflow may have stopped writing: check that the TRAFFIC_TOKEN secret has not expired."
+          fi
+          echo "::error::The clone badge has not updated for ${age_hours} hours."
+          exit 1
