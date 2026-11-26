@@ -46,7 +46,7 @@ figurehead draws the hero graphic at the top of a README, from a spec you commit
 
 No credential. The concept statement is written by your own agent; render and check are pure code and call no model.
 
-- ❌ reads your code. `check --repo` opens local file, folder and export names only, to catch a label that matches one, and only when that flag is passed
+- ❌ sends your code anywhere. `check --repo` reads the contents of local code files, to catch a label that matches a file, folder, function or class name, and only when that flag is passed; nothing it reads leaves your machine
 - ❌ sends a file anywhere
 - ❌ updates itself
 - ❌ sends telemetry
