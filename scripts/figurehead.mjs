@@ -14,7 +14,7 @@
 // 20f136c), which understood "fan" and "before-after" in the flat style only. This file kept that renderer
 // byte-for-byte and added the chart style, the icon table's move to scripts/icons.mjs, spec validation and the
 // check/goldens subcommands.
-import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { parseArgs } from "node:util";
@@ -805,7 +805,10 @@ export function reportFatal(err) {
 // (`process.argv[1] ?? ""`), and "ignore next N" only excludes statement/line ranges, not that
 // branch's own coverage counters, so a literal, deterministic 100% needs the block form here.
 /* node:coverage disable */
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+// Node resolves the entry module through symbolic links but leaves argv[1] as typed, so argv[1]
+// is resolved with realpathSync before the comparison (a run through a linked folder otherwise
+// matched nothing and printed nothing).
+if (import.meta.url === pathToFileURL(process.argv[1] ? realpathSync(process.argv[1]) : "").href) {
   runCli(process.argv.slice(2)).catch(reportFatal);
 }
 /* node:coverage enable */
