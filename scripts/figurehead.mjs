@@ -14,7 +14,7 @@
 // 20f136c), which understood "fan" and "before-after" in the flat style only. This file kept that renderer
 // byte-for-byte and added the chart style, the icon table's move to scripts/icons.mjs, spec validation and the
 // check/goldens subcommands.
-import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, statSync, realpathSync } from "node:fs";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { esc } from "./components/esc.mjs";
@@ -799,11 +799,15 @@ export function reportFatal(err) {
 // reported number does not depend on whether a spawned child's coverage file finishes
 // flushing before this process reads its own.
 //
-// A disable/enable block, not "ignore next N": the condition below embeds its own branch
-// (`process.argv[1] ?? ""`), and "ignore next N" only excludes statement/line ranges, not that
+// The typed path is resolved to its real path first, because Node resolves the entry module
+// through symbolic links: through a linked folder the two would otherwise differ and nothing
+// would run. A missing or unreadable path means another file is the entry point.
+// A disable/enable block, not "ignore next N": the lines below embed their own branch
+// (the catch), and "ignore next N" only excludes statement/line ranges, not that
 // branch's own coverage counters, so a literal, deterministic 100% needs the block form here.
 /* node:coverage disable */
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+const launchedAs = (() => { try { return pathToFileURL(realpathSync(process.argv[1])).href; } catch { return ""; } })();
+if (import.meta.url === launchedAs) {
   runCli(process.argv.slice(2)).catch(reportFatal);
 }
 /* node:coverage enable */

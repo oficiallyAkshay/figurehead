@@ -11,7 +11,7 @@
 //   percent, and compare with the room its card gives it.
 //
 // Zero dependencies, Node 20+, ESM.
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, realpathSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 import { labels } from "./components/labels.mjs";
@@ -1013,12 +1013,17 @@ export async function runCli(argv) {
 // measurement (see test/README-less note by NODE_V8_COVERAGE in those
 // tests) so the reported number does not depend on whether a spawned
 // child's coverage file finishes flushing before this process reads its own.
-// A disable/enable block, not "ignore next N": the condition below embeds its
-// own branch (`process.argv[1] ?? ""`), and "ignore next N" only excludes
+// The typed path is resolved to its real path first, because Node resolves the
+// entry module through symbolic links: through a linked folder the two would
+// otherwise differ and nothing would run. A missing or unreadable path means
+// another file is the entry point.
+// A disable/enable block, not "ignore next N": the lines below embed their
+// own branch (the catch), and "ignore next N" only excludes
 // statement/line ranges, not that branch's own coverage counters, so a
 // literal, deterministic 100% needs the block form here.
 /* node:coverage disable */
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+const launchedAs = (() => { try { return pathToFileURL(realpathSync(process.argv[1])).href; } catch { return ""; } })();
+if (import.meta.url === launchedAs) {
   await runCli(process.argv.slice(2));
 }
 /* node:coverage enable */
