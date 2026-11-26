@@ -382,7 +382,7 @@ function renderFanChart(spec) {
   const MARGIN_ABOVE_WAVE = 30.5;
   const BOTTOM_SPAN = 54;
   const handledOffsets = handled.map((_, i) => (i - (n - 1) / 2) * gapY);
-  const moreOffset = spec.more ? (n - n / 2) * gapY : null;
+  const moreOffset = spec.more ? (n - (n - 1) / 2) * gapY : null;
   const allOffsets = moreOffset === null ? handledOffsets : [...handledOffsets, moreOffset];
   if (allOffsets.length === 0) allOffsets.push(0);
   const minOffset = Math.min(...allOffsets);
@@ -447,7 +447,7 @@ function renderFanChart(spec) {
 
   if (spec.more) {
     const i = n;
-    const cy = Math.round(HUB.cy + (i - n / 2) * gapY);
+    const cy = Math.round(HUB.cy + (i - (n - 1) / 2) * gapY);
     o.push(`  ${chartMoreCard({ x: baseX, cy, w: cardW, h: cardH, theme: THEMES[i % THEMES.length] })}`);
   }
 

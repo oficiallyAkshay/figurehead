@@ -254,6 +254,17 @@ test("a chart with 9 handled items and more:true keeps the more card above the w
   }
 });
 
+for (const count of [3, 4, 9]) {
+  test(`a chart with ${count} handled items and more:true has no vertical overlap between any two cards`, () => {
+    const { cards } = chartLayoutFacts(render(chartSpecWithHandled(count, true)));
+    assert.equal(cards.length, count + 1, `expected ${count} handled cards plus the more card, found ${cards.length}`);
+    const sorted = [...cards].sort((a, b) => a.y - b.y);
+    for (let i = 1; i < sorted.length; i++) {
+      assert.ok(sorted[i].y >= sorted[i - 1].bottom, `card at y=${sorted[i].y} overlaps the card above it, which ends at ${sorted[i - 1].bottom}`);
+    }
+  });
+}
+
 test("the pierless four-item chart still computes the same 820x500 canvas and 446 wave line", () => {
   const spec = JSON.parse(readFileSync(join(examplesDir, "pierless", "pierless.hero.json"), "utf8"));
   const svg = render(spec);
