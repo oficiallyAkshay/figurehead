@@ -65,6 +65,20 @@ test("runCli prints usage and sets exit code 2 for no command at all", async () 
   assert.equal(res.exitCode, 2);
 });
 
+test("runCli prints usage and sets exit code 2 for an unknown option on render", async () => {
+  const res = await runCliCaptured(["render", tidyInboxSpecPath, "--bogus"]);
+  assert.equal(res.exitCode, 2);
+  assert.equal(res.stdout, "", "nothing is rendered");
+  assert.ok(res.error.some((l) => /^usage: figurehead\.mjs render/.test(l)));
+});
+
+test("runCli prints usage and sets exit code 2 for an unknown option on check, so a mistyped --repo cannot skip the name check", async () => {
+  const res = await runCliCaptured(["check", readmerlinSpecPath, readmerlinSvgPath, "--rep", root], { importCheck: () => Promise.resolve({ check }) });
+  assert.equal(res.exitCode, 2);
+  assert.deepEqual(res.log, [], "no check ran");
+  assert.ok(res.error.some((l) => /^usage: figurehead\.mjs render/.test(l)));
+});
+
 // ---------------------------------------------------------------------------
 // render
 // ---------------------------------------------------------------------------

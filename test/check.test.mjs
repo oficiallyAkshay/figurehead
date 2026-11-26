@@ -832,6 +832,20 @@ test("register/reader-nouns fails when a label equals a directory, file or expor
   }
 });
 
+test("register/reader-nouns fails when a label equals an async exported function or a plain function name", () => {
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-nouns-functions-"));
+  try {
+    writeFileSync(join(dir, "a.mjs"), "export async function syncInbox() {}\nfunction tidyUp() {}\n");
+    const spec = { handled: [{ label: "syncInbox" }, { label: "tidyUp" }, { label: "Ship it" }] };
+    const findings = fails(_internal.checkReaderNouns(spec, dir));
+    assert.equal(findings.length, 2);
+    assert.ok(findings.some((f) => /"syncInbox"/.test(f.message)));
+    assert.ok(findings.some((f) => /"tidyUp"/.test(f.message)));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("register/reader-nouns passes when the hub label equals a folder name (the product's own mark)", () => {
   // Reproduces pierless: examples/pierless is a real folder, and pierless's
   // hub.label is "Pierless" — the product's own name, meant to be said.

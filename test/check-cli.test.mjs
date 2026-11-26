@@ -6,7 +6,7 @@
 // covered here instead, deterministically.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -75,4 +75,23 @@ test("runCli exits 1 and prints a tab-separated fail line for a failing pair", a
 test("runCli's --repo flag is threaded through to check(), running register/reader-nouns", async () => {
   const res = await runCliCaptured([readmerlinSpecPath, readmerlinSvgPath, "--repo", root]);
   assert.equal(res.exitCode, 0);
+});
+
+test("runCli prints usage and sets exit code 2 for an unknown option, so a mistyped --repo cannot skip the name check", async () => {
+  const res = await runCliCaptured([readmerlinSpecPath, readmerlinSvgPath, "--rep", root]);
+  assert.equal(res.exitCode, 2);
+  assert.ok(res.error.some((l) => /^usage: node scripts\/check\.mjs/.test(l)));
+});
+
+test("runCli accepts --repo=<dir> and runs register/reader-nouns on it", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-checkcli-repo-eq-"));
+  try {
+    // readmerlin's "by" label is "your agent"; a folder of that name is a planted repo noun.
+    mkdirSync(join(dir, "your agent"));
+    const res = await runCliCaptured([readmerlinSpecPath, readmerlinSvgPath, `--repo=${dir}`]);
+    assert.equal(res.exitCode, 1);
+    assert.ok(res.log.some((l) => l.startsWith("register/reader-nouns\tfail\t")));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -17,6 +17,7 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { dirname, resolve, join } from "node:path";
+import { parseArgs } from "node:util";
 import { esc } from "./components/esc.mjs";
 import { glyph } from "./components/glyphs.mjs";
 import { svgHead } from "./components/svg-shell.mjs";
@@ -669,22 +670,21 @@ function usage() {
   console.error("       figurehead.mjs goldens");
 }
 
-function flagValue(args, name) {
-  const i = args.indexOf(name);
-  return i === -1 ? undefined : args[i + 1];
-}
+// The options each command takes. Parsing is strict: an unknown option or an option with no
+// value is a usage error, so a mistyped --repo can never silently skip the name check.
+const COMMAND_OPTIONS = {
+  render: { out: { type: "string" } },
+  check: { repo: { type: "string" } },
+  goldens: {},
+};
 
-function positionalArgs(args) {
-  const out = [];
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i];
-    if (a.startsWith("--")) {
-      i++; // skip its value
-      continue;
-    }
-    out.push(a);
+function parseCommand(cmd, args) {
+  if (!Object.hasOwn(COMMAND_OPTIONS, cmd)) return null;
+  try {
+    return parseArgs({ args, options: COMMAND_OPTIONS[cmd], allowPositionals: true });
+  } catch {
+    return null;
   }
-  return out;
 }
 
 // The default way the "check" subcommand reaches scripts/check.mjs, and the
@@ -710,9 +710,16 @@ function defaultExamplesDir() {
 // with a top-level await.
 export async function runCli(argv, { importCheck = importCheckModule, examplesDir = defaultExamplesDir() } = {}) {
   const [cmd, ...rest] = argv;
+  const parsed = parseCommand(cmd, rest);
+  if (!parsed) {
+    usage();
+    process.exitCode = 2;
+    return;
+  }
+  const { values, positionals } = parsed;
 
   if (cmd === "render") {
-    const [file] = positionalArgs(rest);
+    const [file] = positionals;
     if (!file) {
       usage();
       process.exitCode = 2;
@@ -720,15 +727,15 @@ export async function runCli(argv, { importCheck = importCheckModule, examplesDi
     }
     const spec = JSON.parse(readFileSync(file, "utf8"));
     const svg = render(spec);
-    const out = flagValue(rest, "--out");
+    const out = values.out;
     if (out) writeFileSync(out, svg);
     else process.stdout.write(svg);
     return;
   }
 
   if (cmd === "check") {
-    const [specFile, svgFile] = positionalArgs(rest);
-    const repo = flagValue(rest, "--repo");
+    const [specFile, svgFile] = positionals;
+    const repo = values.repo;
     if (!specFile || !svgFile) {
       usage();
       process.exitCode = 2;
@@ -754,24 +761,19 @@ export async function runCli(argv, { importCheck = importCheckModule, examplesDi
     return;
   }
 
-  if (cmd === "goldens") {
-    for (const name of readdirSync(examplesDir)) {
-      const dir = join(examplesDir, name);
-      if (!statSync(dir).isDirectory()) continue;
-      const specPath = join(dir, `${name}.hero.json`);
-      try {
-        const spec = JSON.parse(readFileSync(specPath, "utf8"));
-        writeFileSync(join(dir, `${name}.svg`), render(spec));
-        console.log(`rendered examples/${name}/${name}.svg`);
-      } catch (err) {
-        if (err.code !== "ENOENT") throw err;
-      }
+  // goldens: parseCommand already refused any other command.
+  for (const name of readdirSync(examplesDir)) {
+    const dir = join(examplesDir, name);
+    if (!statSync(dir).isDirectory()) continue;
+    const specPath = join(dir, `${name}.hero.json`);
+    try {
+      const spec = JSON.parse(readFileSync(specPath, "utf8"));
+      writeFileSync(join(dir, `${name}.svg`), render(spec));
+      console.log(`rendered examples/${name}/${name}.svg`);
+    } catch (err) {
+      if (err.code !== "ENOENT") throw err;
     }
-    return;
   }
-
-  usage();
-  process.exitCode = 2;
 }
 
 // Extracted so a test can call it directly with both an Error (the real
