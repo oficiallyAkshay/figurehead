@@ -5,7 +5,7 @@
 // builder's brief.
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, chmodSync } from "node:fs";
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, chmodSync, symlinkSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, resolve, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -1185,6 +1185,31 @@ test("CLI's --repo flag runs register/reader-nouns", () => {
     const res = spawnSync("node", [resolve(root, "scripts/check.mjs"), specPath, svgPath, "--repo", dir], { cwd: root, encoding: "utf8", env: NO_COVERAGE_ENV });
     assert.equal(res.status, 1);
     assert.match(res.stdout, /register\/reader-nouns\tfail\t.*"rides"/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("both scripts give the same output and exit code through a linked folder as by their real path", () => {
+  const dir = mkdtempSync(join(tmpdir(), "figurehead-cli-link-"));
+  try {
+    const linked = join(dir, "linked-scripts");
+    symlinkSync(resolve(root, "scripts"), linked, "dir");
+    const runs = [
+      ["check.mjs", badSpecPath, resolve(root, "examples/readmerlin/readmerlin.svg")],
+      ["figurehead.mjs", "render", resolve(root, "examples/readmerlin/readmerlin.hero.json")],
+    ];
+    for (const [script, ...args] of runs) {
+      const run = (folder) => spawnSync("node", [join(folder, script), ...args], { cwd: root, encoding: "utf8", env: NO_COVERAGE_ENV });
+      const real = run(resolve(root, "scripts"));
+      const viaLink = run(linked);
+      assert.notEqual(real.stdout, "", `${script} printed nothing by its real path`);
+      assert.deepEqual(
+        { status: viaLink.status, stdout: viaLink.stdout, stderr: viaLink.stderr },
+        { status: real.status, stdout: real.stdout, stderr: real.stderr },
+        `${script} through a linked folder`,
+      );
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
