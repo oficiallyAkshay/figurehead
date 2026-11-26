@@ -11,9 +11,10 @@
 //   percent, and compare with the room its card gives it.
 //
 // Zero dependencies, Node 20+, ESM.
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, realpathSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
+import { parseArgs } from "node:util";
 import { labels } from "./components/labels.mjs";
 import { ICONS as defaultIcons } from "./icons.mjs";
 import defaultWidths from "./widths.mjs";
@@ -488,7 +489,8 @@ function collectReaderNouns(repoDir) {
   const nouns = new Set();
   const skipDirs = new Set(["node_modules", ".git", ".claude"]);
   const codeExts = new Set([".mjs", ".js", ".ts", ".py"]);
-  const identRe = /\b(?:export function|export const|def|class)\s+([A-Za-z_$][\w$]*)/g;
+  // "function" alone also covers "export function", "async function" and "export async function".
+  const identRe = /\b(?:function|export const|def|class)\s+([A-Za-z_$][\w$]*)/g;
 
   const walk = (dir) => {
     let entries;
@@ -985,10 +987,14 @@ export const _internal = {
 // through the entry-point guard below, which behaves identically since
 // nothing else runs after it.
 export async function runCli(argv) {
-  const repoIdx = argv.indexOf("--repo");
-  const repo = repoIdx !== -1 ? argv[repoIdx + 1] : undefined;
-  const positional = repoIdx === -1 ? argv : argv.filter((_, i) => i !== repoIdx && i !== repoIdx + 1);
-  const [specPath, svgPath] = positional;
+  // Strict parsing: an unknown option or a --repo with no value is a usage error, never a
+  // silently skipped name check.
+  let parsed = null;
+  try {
+    parsed = parseArgs({ args: argv, options: { repo: { type: "string" } }, allowPositionals: true });
+  } catch {}
+  const repo = parsed?.values.repo;
+  const [specPath, svgPath] = parsed?.positionals ?? [];
 
   if (!specPath || !svgPath) {
     console.error("usage: node scripts/check.mjs <spec.hero.json> <file.svg> [--repo <dir>]");
@@ -1018,7 +1024,10 @@ export async function runCli(argv) {
 // statement/line ranges, not that branch's own coverage counters, so a
 // literal, deterministic 100% needs the block form here.
 /* node:coverage disable */
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+// Node resolves the entry module through symbolic links but leaves argv[1] as typed, so argv[1]
+// is resolved with realpathSync before the comparison (a bundle run from a symlinked temp folder
+// otherwise matched nothing and silently ran no check).
+if (import.meta.url === pathToFileURL(process.argv[1] ? realpathSync(process.argv[1]) : "").href) {
   await runCli(process.argv.slice(2));
 }
 /* node:coverage enable */
