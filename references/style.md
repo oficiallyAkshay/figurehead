@@ -14,7 +14,7 @@ Use `chart` when the product's own world is a harbour or the sea: a pier, an anc
 
 ## window
 
-Two app surfaces on a cool grey ground: an inbox panel with one row per handled item, and a calendar month with a highlighted range of days. Faint feed curves run from the inbox rows into the range, one accent arrow hands off to the hub disc, and the deliverable is a summary sheet with two sheets stacked behind it. System-ui type, one blue accent, white panels with a soft shadow, no texture and no hand font. Dark mode swaps the panels and ground for dark slate and lightens the accent. It reproduces `examples/receipts/reference.svg`.
+Two app surfaces on a cool grey ground: an inbox panel with one row per handled item, and a calendar month with a highlighted range of days. Faint feed curves run from the inbox rows into the range, one accent arrow runs from the calendar through the hub disc to the deliverable, and the deliverable is a summary sheet with two sheets stacked behind it. System-ui type, one blue accent, white panels with a soft shadow, no texture and no hand font. Dark mode swaps the panels and ground for dark slate and lightens the accent. It reproduces `examples/receipts/reference.svg`.
 
 Use `window` when the product's world is its own interface: an automation between two app surfaces, the way the receipts tool's world was earned below. It takes exactly two `sources` (an inbox, then a calendar), a `hub` and a `deliverable`, and refuses `source`, `aside` and item `theme`.
 
