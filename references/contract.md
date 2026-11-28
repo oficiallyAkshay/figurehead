@@ -15,7 +15,7 @@ An agent skill. Not a package. Installed with `npx skills add oficiallyAkshay/fi
 | `SKILL.md` | skill builder (body only; front matter is fixed) | The skill: step A writes the concept statement, step B picks the shape and renders |
 | `references/concept.md` | skill builder | How to write a concept statement: outcome, three to five parts, one deeper layer; the litmus test |
 | `references/shape.md` | skill builder | The three questions that map a statement to a shape; the wording rules for cards |
-| `references/style.md` | skill builder | The two styles, when each applies, the palette, what "handmade not craftbook" means |
+| `references/style.md` | skill builder | The three styles, when each applies, the palette, what "handmade not craftbook" means |
 | `references/icons.md` | renderer builder | The published icon list, generated from `scripts/icons.mjs` by a test that fails when they differ |
 | `scripts/figurehead.mjs` | renderer builder | The CLI and the `render(spec)` export. Seeded from readmerlin's `hero-svg.mjs`; that history is kept |
 | `scripts/icons.mjs` | renderer builder | The icon subset, one entry per name |
@@ -26,7 +26,7 @@ An agent skill. Not a package. Installed with `npx skills add oficiallyAkshay/fi
 | `examples/<name>/` | renderer builder | Goldens, see below |
 | `.github/`, `README.md`, `package.json`, this file | conductor | |
 
-One worktree and one branch per PR, created from the repo root: `git worktree add .claude/worktrees/<name> -b claude/<name>`. Never touch a file outside your rows. Never arm auto-merge.
+One worktree and one branch per PR, created from the repo root: `git worktree add .claude/worktrees/<name> -b claude/<name>`. Never touch a file outside your rows. Never arm auto-merge. This rule binds builder sessions only.
 
 ## The spec
 
