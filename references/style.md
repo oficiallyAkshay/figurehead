@@ -67,7 +67,7 @@ Craftbook: washi tape, sticky notes, rounded pastel cards, cute captions, gulls 
 
 Adult, not cute. When a draft in `chart` starts to look like a scrapbook page, it has drifted toward craftbook; pull it back toward ink, brass and rope.
 
-## Palette, light then dark
+## The chart palette, light then dark
 
 | Element | Light | Dark |
 | --- | --- | --- |
