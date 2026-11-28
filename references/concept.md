@@ -52,8 +52,8 @@ Each statement below is read off the project's own committed hero, not invented 
 
 **clonometer**
 
-- Outcome: "a count that never loses a day" (this is the handoff's own example outcome for clonometer, `FIGUREHEAD-HANDOFF.md`, the outcome layer's list of examples).
-- Parts, the one metaphor the clonometer hero landed on, nothing more: the fourteen-day window, new boxes entering on the right; the belt that drops the oldest day off the left; the all-time total that catches the number it drops (`_handoff/HEROFOLD-ITEMS.md`, "what the clonometer hero taught").
+- Outcome: "a count that never loses a day".
+- Parts, the one metaphor the clonometer hero landed on, nothing more: the fourteen-day window, new boxes entering on the right; the belt that drops the oldest day off the left; the all-time total that catches the number it drops.
 - Deeper: not pushed past layer two. The window, the drop and the total are the whole accepted picture.
 
 **pierless**

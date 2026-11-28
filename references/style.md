@@ -1,4 +1,4 @@
-# The two styles
+# The styles
 
 ## flat
 
@@ -11,6 +11,12 @@ Use `flat` only for compatibility: when a hero already renders flat and must not
 Parchment with grain and a vignette, faint rhumb lines and a compass rose top right, a few depth soundings, two gulls top left, three wave bands with ink crests along the bottom, a sailboat flying signal flags, rope links (solid rope colour under a darker dashed twist) tied through brass grommets, the hub in navy with a brass rim inside a coiled rope, a Georgia stack for headline, titles and italic subtitles, one handwritten aside, and hand-drawn wobble on outlines. Dark mode swaps parchment for night blue, sun for moon and stars, and lightens brass and rope.
 
 Use `chart` when the product's own world is a harbour or the sea: a pier, an anchor, water, the way pierless's name gave one. It is not a general answer for "give it a pun"; it fits only when the world itself is nautical. A rocket or a magic wand is still not allowed even in `chart`; if the name doesn't supply a harbour or the sea, `chart` is the wrong style too, not just the wrong decoration.
+
+## window
+
+Two app surfaces on a cool grey ground: an inbox panel with one row per handled item, and a calendar month with a highlighted range of days. Faint feed curves run from the inbox rows into the range, one accent arrow hands off to the hub disc, and the deliverable is a summary sheet with two sheets stacked behind it. System-ui type, one blue accent, white panels with a soft shadow, no texture and no hand font. Dark mode swaps the panels and ground for dark slate and lightens the accent. It reproduces `examples/receipts/reference.svg`.
+
+Use `window` when the product's world is its own interface: an automation between two app surfaces, the way the receipts tool's world was earned below. It takes exactly two `sources` (an inbox, then a calendar), a `hub` and a `deliverable`, and refuses `source`, `aside` and item `theme`.
 
 ## Choosing a world
 
@@ -29,7 +35,7 @@ Most products are neither a compatibility case nor a harbour. A receipts tool's 
 
 1. Propose the world in chat, in one sentence, and wait for the owner to accept it before drawing anything. For the receipts tool, that sentence was: its feeling is efficiency, structure and time back, so its world is the two app surfaces themselves, an inbox list and a calendar month with the trip dates highlighted, in an interface register with one accent and no texture. The owner accepted that world before anything was drawn.
 2. Make a hand-drawn reference for that world and get it accepted first, the same way `chart`'s reference (`examples/pierless/reference.svg`) was accepted before the renderer reproduced it.
-3. Only then does the renderer learn the style by name, with its own section in this file and its own golden in `examples/`. The receipts tool's world earned the name `window`; that style is being added to the renderer now, and it is not yet one to choose until that work merges.
+3. Only then does the renderer learn the style by name, with its own section in this file and its own golden in `examples/`. The receipts tool's world earned the name `window` this way, with its golden in `examples/receipts/`.
 
 A new world is never rendered by reusing `chart`'s harbour, or `flat`'s slate, with different labels on top. That is faking a style, not earning one.
 
@@ -37,11 +43,11 @@ A new world is never rendered by reusing `chart`'s harbour, or `flat`'s slate, w
 
 An earlier pass fixed eight style decisions: one accent colour, one line weight, nothing filled, no scene, no gradients, one light style. The owner walked most of that back on pierless, one explicit ask at a time: prettier and colourful, then more expressive and editorialised, then background elements and texture, then whimsy and natural texture, then "more nautical harbour handmade than harbour craftbook".
 
-Survives, in both styles:
+Survives, in every style:
 - Recognition over abstraction. A real merge button, a real anchor, a real boat. Never an icon with a caption standing in for a concept.
-- Feature text in a legible face at legible size. A hand font is for one aside only, because the handwriting stack falls back differently on every machine.
-- One meaning per colour within the picture: each card, its icon, its rope and its grommet share one theme colour.
-- Wide and short. The pierless hero is 820 by 500.
+- Feature text in a legible face at legible size. A hand font is for one aside only, because the handwriting stack falls back differently on every machine; `window` draws no aside.
+- One meaning per colour within the picture: in `chart`, each card, its icon, its rope and its grommet share one theme colour; `window` has one accent and no item themes.
+- Wide and short. The pierless hero is 820 by 500; `window` is 900 wide.
 - Light and dark from one file, via CSS classes under `prefers-color-scheme: dark`, including `display: none` swaps such as sun by day, moon and stars by night.
 - Every label fits its card. `text/fits` in `scripts/check.mjs` measures this only for the label kinds it handles; check any other label by eye.
 
@@ -70,7 +76,7 @@ Adult, not cute. When a draft in `chart` starts to look like a scrapbook page, i
 | muted | `#6b5d48` | `#a6b3c8` |
 | brass | `#a8741f` | `#e0b562` |
 | rope | `#a67c45` with twist `#6e4e27` | `#cfa66a` with twist `#8a6a3c` |
-| hub | `#1f3a66`, rimmed brass | `#1f3a66`, rimmed brass |
+| hub | `#1f3a66`, rimmed brass | `#28508f`, rimmed brass |
 | card theme: navy | `#2b4a7e` | `#8fb4ff` |
 | card theme: sea | `#2f7d6d` | `#6fd1b9` |
 | card theme: ochre | `#b7791f` | `#f0c064` |
