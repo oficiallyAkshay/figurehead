@@ -94,11 +94,11 @@ Each has an id, a level (fail or warn), a message and a repair line, printed one
 | `spec/shape` | a required field is missing, a field is unknown, or a count is out of range |
 | `icons/known` | an icon name is not in the subset |
 | `icons/distinct` | two handled items share an icon |
-| `text/fits` | a label's measured width, plus ten percent, exceeds the room its card gives it |
+| `text/fits` | a label's measured width, plus ten percent, exceeds the room its card gives it; only the label kinds `scripts/check.mjs` handles are measured |
 | `spec/agrees` | a label in the spec does not appear as text in the SVG |
 | `register/reader-nouns` | with `--repo`, a label equals a path, module, export or function name in that repo |
 | `curves/no-hook` | a fan curve's control x is not strictly between its two endpoints |
-| `geometry/inside` | any element's bounding box leaves the viewBox |
+| `geometry/inside` | a rect, circle or measured text box leaves the viewBox; `<path>` geometry is not checked |
 | `xml/valid` | the SVG is not well formed, or lacks a title, `role="img"` and `aria-labelledby` |
 
 `text/fits` reads `scripts/widths.mjs`, a module whose default export is the data, so a bundler can put it into one file with the check. That file holds, for each face the renderer uses (sans, serif, hand) and each size, the advance of every printable ASCII character, measured once in a browser and committed, with the measurement method written at the top of `scripts/check.mjs`.

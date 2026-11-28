@@ -43,7 +43,7 @@ Survives, in both styles:
 - One meaning per colour within the picture: each card, its icon, its rope and its grommet share one theme colour.
 - Wide and short. The pierless hero is 820 by 500.
 - Light and dark from one file, via CSS classes under `prefers-color-scheme: dark`, including `display: none` swaps such as sun by day, moon and stars by night.
-- Every label fits its card, checked by measurement (`text/fits` in `scripts/check.mjs`), not by eye.
+- Every label fits its card. `text/fits` in `scripts/check.mjs` measures this only for the label kinds it handles; check any other label by eye.
 
 Relaxed, for `chart` only:
 - Colour per item, in muted tones: navy, sea green, ochre, plum on parchment. Bright pastels read as a scrapbook, not as this style.

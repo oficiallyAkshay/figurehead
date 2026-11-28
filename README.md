@@ -24,7 +24,7 @@ figurehead draws the hero graphic at the top of a README, from a spec you commit
 
 <p align="center">🖼️<br><b>One real picture</b><br>A concept statement first, then a shape and a style: the hero draws the reader's day, not a diagram.</p>
 
-<p align="center">✅<br><b>Checked before it ships</b><br>Every label in the spec has to appear in the picture, fit its card, and stay inside the frame.</p>
+<p align="center">✅<br><b>Checked before it ships</b><br>Every label in the spec has to appear in the picture. The label kinds the checker measures have to fit their card, and boxes and measured text have to stay inside the frame; drawn path shapes are not checked against the frame.</p>
 
 <p align="center">🔁<br><b>Never drifts</b><br>Same spec, same bytes: every committed example rebuilds byte for byte, so a stale hero fails the build.</p>
 
